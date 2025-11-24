@@ -102,11 +102,15 @@
         .filter-row .col {
             padding-left: 2px;
             padding-right: 2px;
+            position: relative;
+            min-width: 120px; /* 确保有足够的宽度 */
         }
         .filter-row .form-control-sm {
             padding: 0.25rem 0.5rem;
             font-size: 0.875rem;
             line-height: 1.5;
+            width: 100%; /* 确保占满容器宽度 */
+            box-sizing: border-box; /* 确保padding不会增加元素总宽度 */
         }
         /* 清除按钮样式 */
         .clear-filter-btn {
@@ -205,6 +209,7 @@
                 </table>
             </div>
             <div id="recordCount" class="mt-2 text-muted"></div>
+            <div id="paginationContainer" class="mt-3"></div>
         </div>
     </div>
 
@@ -252,9 +257,13 @@
         let currentTable = 'wf_open';
         let tableData = [];
         let originalData = [];
+        let filteredData = []; // 用于存储过滤后的数据
         let columnNames = [];
         let dateColumns = ['req_date_wf', 'eta_wfsz', 'latest_departure_date', 'po_placed_date'];
         let currentEditingCell = null; // 跟踪当前正在编辑的单元格
+        // 分页相关变量
+        let currentPage = 1;
+        let itemsPerPage = 20;
         
         // 初始化页面
         document.addEventListener('DOMContentLoaded', function() {
@@ -277,11 +286,18 @@
             // 监听表选择变化
             document.getElementById('tableSelect').addEventListener('change', function() {
                 currentTable = this.value;
+                // 清除过滤器
+                clearAllFilters();
                 loadTableData();
             });
             
             // 监听全局键盘事件
             document.addEventListener('keydown', function(event) {
+                // 避免在输入框中按键时触发全局事件
+                if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+                    return;
+                }
+                
                 if (currentEditingCell) {
                     if (event.key === 'Escape') {
                         // ESC键取消编辑
@@ -382,10 +398,17 @@
                 .then(data => {
                     if (data.success) {
                         tableData = data.data;
+                        filteredData = [...tableData]; // 初始化过滤数据
                         // 根据表名获取正确的列顺序
                         columnNames = getColumnNames(currentTable);
                         originalData = JSON.parse(JSON.stringify(tableData));
+                        // 重置到第一页
+                        currentPage = 1;
                         renderTable();
+                        // 确保过滤行在数据加载后正确显示
+                        setTimeout(() => {
+                            renderFilterRow();
+                        }, 0);
                         hideStatus();
                     } else {
                         showStatus(`加载数据失败: ${data.error}`, 'error');
@@ -400,24 +423,10 @@
         function renderTable() {
             renderTableHeader();
             renderTableBody();
-            renderFilterRow();
+            renderFilterRow();  // 恢复过滤行渲染
             updateRecordCount();
+            renderPagination();
             updateTableTitle();
-        }
-        
-        // 渲染表头
-        function renderTableHeader() {
-            const header = document.getElementById('tableHeader');
-            header.innerHTML = '';
-            
-            let headerRow = '<tr>';
-            columnNames.forEach(col => {
-                headerRow += `<th>${col}</th>`;
-            });
-            headerRow += '<th>操作</th>';
-            headerRow += '</tr>';
-            
-            header.innerHTML = headerRow;
         }
         
         // 渲染表体
@@ -425,8 +434,16 @@
             const body = document.getElementById('tableBody');
             body.innerHTML = '';
             
+            // 计算分页数据
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, filteredData.length);
+            const paginatedData = filteredData.slice(startIndex, endIndex);
+            
             let tableHtml = '';
-            tableData.forEach((row, rowIndex) => {
+            paginatedData.forEach((row, index) => {
+                // 使用实际的行索引而不是分页后的索引
+                const rowIndex = startIndex + index;
+                
                 // 检查 qty*net_price 是否等于 total_price
                 const qty = parseFloat(row.qty) || 0;
                 const netPrice = parseFloat(row.net_price) || 0;
@@ -493,7 +510,8 @@
             body.innerHTML = tableHtml;
             
             // 为无效行添加title提示
-            tableData.forEach((row, rowIndex) => {
+            paginatedData.forEach((row, index) => {
+                const rowIndex = startIndex + index;
                 const qty = parseFloat(row.qty) || 0;
                 const netPrice = parseFloat(row.net_price) || 0;
                 const totalPrice = parseFloat(row.total_price) || 0;
@@ -509,10 +527,28 @@
             });
         }
         
+        // 渲染表头
+        function renderTableHeader() {
+            const header = document.getElementById('tableHeader');
+            header.innerHTML = '';
+            
+            let headerHtml = '<tr>';
+            columnNames.forEach(col => {
+                headerHtml += `<th>${col}</th>`;
+            });
+            headerHtml += '<th>操作</th>';
+            headerHtml += '</tr>';
+            
+            header.innerHTML = headerHtml;
+        }
+        
         // 渲染过滤行
         function renderFilterRow() {
             const filterRow = document.getElementById('filterRow');
-            filterRow.innerHTML = '';
+            if (!filterRow) {
+                console.error('Filter row element not found');
+                return;
+            }
             
             // 创建一个单独的行用于过滤器
             let filterHtml = '<div class="row">';
@@ -546,123 +582,72 @@
             setupFilterEvents();
         }
         
-        // 取消编辑
-        function cancelEdit(rowIndex) {
-            // 恢复原始数据
-            tableData[rowIndex] = JSON.parse(JSON.stringify(originalData[rowIndex]));
-            renderTableBody();
-        }
-        
         // 过滤表格
         function filterTable(input) {
-            const column = input.getAttribute('data-column');
-            const filterValue = input.value.toLowerCase();
-            
-            // 获取所有表格行
-            const rows = document.querySelectorAll('#tableBody tr');
-            
-            rows.forEach(row => {
-                // 获取该行中对应列的单元格
-                const cells = row.querySelectorAll('td');
-                let match = false;
-                
-                // 遍历所有列，检查是否有过滤器有值
-                columnNames.forEach((col, index) => {
-                    const filterInput = document.querySelector(`input[data-column="${col}"]`);
-                    if (filterInput && filterInput.value) {
-                        const cellValue = cells[index].textContent.toLowerCase();
-                        if (cellValue.includes(filterInput.value.toLowerCase())) {
-                            match = true;
-                        } else {
-                            match = false;
-                            return;
-                        }
-                    }
-                });
-                
-                // 如果没有过滤器有值，则显示所有行
-                if (!document.querySelector('input[data-column].filter-input') || 
-                    !Array.from(document.querySelectorAll('input[data-column]')).some(input => input.value)) {
-                    row.style.display = '';
-                } else {
-                    // 根据匹配结果显示或隐藏行
-                    row.style.display = match ? '' : 'none';
-                }
-            });
+            // 直接应用过滤器，不使用防抖
+            applyAllFilters();
         }
         
-        // 添加一个专门的搜索函数
-        function searchTable() {
+        // 应用所有过滤器
+        function applyAllFilters() {
             // 获取所有过滤器输入框
             const filterInputs = document.querySelectorAll('input[data-column]');
             
-            // 获取所有表格行
-            const rows = document.querySelectorAll('#tableBody tr');
+            // 保存当前的输入值，避免重新渲染时丢失
+            const currentValues = {};
+            filterInputs.forEach(input => {
+                currentValues[input.getAttribute('data-column')] = input.value;
+            });
             
-            rows.forEach(row => {
-                let showRow = true;
+            // 从原始数据开始过滤
+            filteredData = [...tableData];
+            
+            // 应用每个有过滤值的过滤器
+            filterInputs.forEach(input => {
+                const column = input.getAttribute('data-column');
+                const filterValue = input.value.trim().toLowerCase();
                 
-                // 检查每个过滤器
+                if (filterValue) {
+                    filteredData = filteredData.filter(row => {
+                        const cellValue = (row[column] || '').toString().toLowerCase();
+                        return cellValue.includes(filterValue);
+                    });
+                }
+            });
+            
+            // 重置到第一页并重新渲染
+            currentPage = 1;
+            renderTableBody();
+            updateRecordCount();
+            renderPagination();
+            
+            // 恢复输入框的值
+            setTimeout(() => {
                 filterInputs.forEach(input => {
                     const column = input.getAttribute('data-column');
-                    const filterValue = input.value.toLowerCase();
-                    
-                    if (filterValue) {
-                        // 找到对应列的索引
-                        const columnIndex = columnNames.indexOf(column);
-                        if (columnIndex !== -1) {
-                            // 获取该行对应列的单元格
-                            const cell = row.cells[columnIndex];
-                            if (cell) {
-                                const cellValue = cell.textContent.toLowerCase();
-                                // 如果单元格值不包含过滤值，则隐藏该行
-                                if (!cellValue.includes(filterValue)) {
-                                    showRow = false;
-                                }
-                            }
-                        }
+                    if (currentValues[column] !== undefined) {
+                        input.value = currentValues[column];
                     }
                 });
-                
-                // 根据结果显示或隐藏行
-                row.style.display = showRow ? '' : 'none';
-            });
+            }, 0);
         }
         
         // 为过滤器添加回车键事件
         function setupFilterEvents() {
             const filterInputs = document.querySelectorAll('input[data-column]');
             filterInputs.forEach(input => {
-                input.addEventListener('keyup', function(event) {
-                    if (event.key === 'Enter') {
-                        searchTable();
-                    }
-                });
+                // 确保移除之前可能添加的事件监听器
+                input.removeEventListener('keyup', handleFilterKeyUp);
+                // 添加新的事件监听器
+                input.addEventListener('keyup', handleFilterKeyUp);
             });
         }
         
-        // 显示插入表单
-        function showInsertForm() {
-            const formFields = document.getElementById('insertFormFields');
-            formFields.innerHTML = '';
-            
-            // 为每个列创建输入字段
-            columnNames.forEach(col => {
-                const div = document.createElement('div');
-                div.className = 'col-md-3 mb-3';
-                div.innerHTML = `
-                    <label for="insert_${col}" class="form-label">${col}</label>
-                    <input type="text" class="form-control form-control-sm" id="insert_${col}" name="${col}">
-                `;
-                formFields.appendChild(div);
-            });
-            
-            document.getElementById('insertForm').style.display = 'block';
-        }
-        
-        // 隐藏插入表单
-        function hideInsertForm() {
-            document.getElementById('insertForm').style.display = 'none';
+        // 处理过滤器的keyup事件
+        function handleFilterKeyUp(event) {
+            if (event.key === 'Enter') {
+                applyAllFilters();
+            }
         }
         
         // 清除所有过滤器
@@ -673,11 +658,14 @@
                 input.value = '';
             });
             
-            // 显示所有行
-            const rows = document.querySelectorAll('#tableBody tr');
-            rows.forEach(row => {
-                row.style.display = '';
-            });
+            // 重置过滤数据为原始数据
+            filteredData = [...tableData];
+            
+            // 重置到第一页并重新渲染
+            currentPage = 1;
+            renderTableBody();
+            updateRecordCount();
+            renderPagination();
         }
         
         // 显示确认对话框
@@ -713,6 +701,11 @@
         
         // 编辑单元格
         function editCell(cell) {
+            // 如果点击的是输入框，不执行编辑操作
+            if (event && event.target.tagName === 'INPUT') {
+                return;
+            }
+            
             // 如果有正在编辑的单元格，先取消它的编辑状态
             if (currentEditingCell && currentEditingCell !== cell) {
                 // 检查当前编辑的单元格是否有未保存的更改
@@ -1145,7 +1138,102 @@
         // 更新记录计数
         function updateRecordCount() {
             const countElement = document.getElementById('recordCount');
-            countElement.textContent = `显示 ${tableData.length} 条记录`;
+            const startIndex = (currentPage - 1) * itemsPerPage + 1;
+            const endIndex = Math.min(currentPage * itemsPerPage, filteredData.length);
+            countElement.textContent = `显示第 ${startIndex}-${endIndex} 条记录，共 ${filteredData.length} 条记录`;
+        }
+        
+        // 渲染分页控件
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            
+            // 如果只有一页或没有数据，则不显示分页控件
+            if (totalPages <= 1) {
+                document.getElementById('paginationContainer').innerHTML = '';
+                return;
+            }
+            
+            let paginationHtml = `
+                <nav aria-label="分页导航">
+                    <ul class="pagination justify-content-center">
+            `;
+            
+            // 上一页按钮
+            if (currentPage > 1) {
+                paginationHtml += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" onclick="changePage(${currentPage - 1}); return false;">上一页</a>
+                    </li>
+                `;
+            } else {
+                paginationHtml += `
+                    <li class="page-item disabled">
+                        <span class="page-link">上一页</span>
+                    </li>
+                `;
+            }
+            
+            // 页码按钮
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, currentPage + 2);
+            
+            // 确保始终显示5个页码按钮（如果可能）
+            if (endPage - startPage < 4) {
+                if (startPage === 1) {
+                    endPage = Math.min(totalPages, startPage + 4);
+                } else {
+                    startPage = Math.max(1, endPage - 4);
+                }
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                if (i === currentPage) {
+                    paginationHtml += `
+                        <li class="page-item active">
+                            <span class="page-link">${i}</span>
+                        </li>
+                    `;
+                } else {
+                    paginationHtml += `
+                        <li class="page-item">
+                            <a class="page-link" href="#" onclick="changePage(${i}); return false;">${i}</a>
+                        </li>
+                    `;
+                }
+            }
+            
+            // 下一页按钮
+            if (currentPage < totalPages) {
+                paginationHtml += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" onclick="changePage(${currentPage + 1}); return false;">下一页</a>
+                    </li>
+                `;
+            } else {
+                paginationHtml += `
+                    <li class="page-item disabled">
+                        <span class="page-link">下一页</span>
+                    </li>
+                `;
+            }
+            
+            paginationHtml += `
+                    </ul>
+                </nav>
+            `;
+            
+            document.getElementById('paginationContainer').innerHTML = paginationHtml;
+        }
+        
+        // 切换页面
+        function changePage(pageNumber) {
+            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            if (pageNumber >= 1 && pageNumber <= totalPages) {
+                currentPage = pageNumber;
+                renderTableBody();
+                updateRecordCount();
+                renderPagination();
+            }
         }
         
         // 更新表标题
