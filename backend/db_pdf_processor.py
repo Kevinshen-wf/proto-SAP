@@ -561,7 +561,7 @@ def insert_non_wf_open_data(data_entries):
                 values = []
                 for key in ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 
                            'req_date', 'eta_wfsz', 'shipping_mode', 'comment', 'po_placed_date', 
-                           'qc_result', 'shipping_cost', 'tracking_no', 'so_number', 'yes_not_paid']:
+                           'qc_result', 'shipping_cost', 'tracking_no', 'so_number', 'yes_not_paid', 'company']:
                     if key in entry and entry[key] is not None:
                         columns.append(key)
                         values.append(f'%({key})s')
@@ -937,3 +937,510 @@ def extract_centurion_data(pdf_path):
             print("Could not find item header in Centurion PDF")
     
     return data
+
+def parse_magic_fx_line(block_text, line_number, po_number, po_placed_date):
+    """解析MAGIC FX数据块（可能是多行）"""
+    import re
+    from datetime import datetime
+    
+    # 使用正则表达式提取数据
+    # VARIOUS | VARIOUS | Description | Date | Qty | Price | Total
+    # 描述可能有多行，所以使用 (.+?) 来匹配不一正的描述
+    # 处理正则表达式，使用 DOTALL 标志以支持描述跨行
+    pattern = r'VARIOUS\s+VARIOUS\s+(.+?)\s+(\d{1,2}-\d{1,2}-\d{4})\s+([\d.,\s]+?)\s*(?:pc|pcs)?\s+([\d.,\s]+?)\s+([\d.,\s]+?)(?:\s|$)'
+    match = re.search(pattern, block_text, re.DOTALL)
+    
+    if not match:
+        # 尝试更幻活的模式，处理描述可能没有一步到日期
+        pattern2 = r'VARIOUS\s+VARIOUS\s+(.+?)\s+(\d{1,2}-\d{1,2}-\d{4})'
+        match2 = re.search(pattern2, block_text, re.DOTALL)
+        if match2:
+            description = match2.group(1).strip()
+            delivery_date_str = match2.group(2)
+            # 尝试从余下的文本中提取数字
+            rest_text = block_text[match2.end():].strip()
+            # 找整数或带小数的数字
+            numbers = re.findall(r'[\d.,]+', rest_text)
+            if len(numbers) >= 3:
+                qty_str = numbers[0]
+                net_price_str = numbers[1]
+                total_price_str = numbers[2]
+            else:
+                return None
+        else:
+            return None
+    else:
+        description = match.group(1).strip()
+        delivery_date_str = match.group(2)
+        qty_str = match.group(3).strip()
+        net_price_str = match.group(4).strip()
+        total_price_str = match.group(5).strip()
+    
+    # 清理数据中的空格
+    qty_str = re.sub(r'\s+', '', qty_str)
+    net_price_str = re.sub(r'\s+', '', net_price_str)
+    total_price_str = re.sub(r'\s+', '', total_price_str)
+    
+    # 不为空且有效的格式检查
+    if not description or not qty_str or not net_price_str:
+        return None
+    
+    # 解析日期
+    req_date = None
+    try:
+        req_date = datetime.strptime(delivery_date_str, '%d-%m-%Y').date()
+    except:
+        pass
+    
+    # 清理数据 (MAGIC FX格式: 逼号是小数点，点是分位符)
+    # 例如: 512,60 表示 512.60（1.234,56 表示 1234.56
+    qty_str = qty_str.replace('.', '').replace(',', '.')  # 移除分位符，用点作为小数点
+    net_price_str = f"€{net_price_str.replace('.', '').replace(',', '.')}"  # 同样处理
+    total_price_str = f"€{total_price_str.replace('.', '').replace(',', '.')}"  # 同样处理
+    
+    print(f"Processing row {line_number}: Description={description}, Qty={qty_str}")
+    
+    # 创建数据行
+    data_row = {
+        "po": po_number,
+        "pn": "N/A",
+        "line": line_number,
+        "po_line": f"{po_number}/{line_number}" if po_number else str(line_number),
+        "description": description,
+        "qty": parse_decimal(qty_str),
+        "net_price": parse_decimal(net_price_str),
+        "total_price": parse_decimal(total_price_str),
+        "req_date": req_date,
+        "po_placed_date": po_placed_date,
+        "eta_wfsz": None,
+        "shipping_mode": None,
+        "comment": None,
+        "purchaser": None,
+        "qc_result": None,
+        "shipping_cost": None,
+        "tracking_no": None,
+        "so_number": None,
+        "yes_not_paid": None
+    }
+    return data_row
+
+def extract_magic_fx_data(pdf_path):
+    """提取MAGIC FX采购订单数据"""
+    import pdfplumber
+    import re
+    from datetime import datetime
+    from decimal import Decimal, InvalidOperation
+    
+    data = []
+    
+    with pdfplumber.open(pdf_path) as pdf:
+        if not pdf.pages:
+            print(f"No pages found in PDF: {pdf_path}")
+            return data
+        
+        # 从第一页提取PO信息
+        text = pdf.pages[0].extract_text()
+        print(f"Processing MAGIC FX PDF: {pdf_path}")
+        print(f"PDF text length: {len(text) if text else 0}")
+        
+        # 提取采购订单号
+        po_match = re.search(r'Purchase Order No\.\s*([\d]+)', text)
+        po_number = po_match.group(1) if po_match else ""
+        print(f"Extracted PO Number: {po_number}")
+        
+        # 提取日期
+        date_match = re.search(r'Date\s+([\d]{2}-[\d]{2}-[\d]{4})', text)
+        po_placed_date = None
+        if date_match:
+            date_str = date_match.group(1)
+            # 解析日期格式 DD-MM-YYYY
+            try:
+                po_placed_date = datetime.strptime(date_str, '%d-%m-%Y').date()
+            except:
+                po_placed_date = None
+        print(f"PO Placed Date: {po_placed_date}")
+        
+        # 查找表格
+        tables = pdf.pages[0].extract_tables()
+        
+        if tables and tables[0]:
+            # 使用表格数据
+            table = tables[0]
+            print(f"Found table with {len(table)} rows")
+            
+            # 查找表头行
+            header_row_index = -1
+            for i, row in enumerate(table):
+                if row and any(cell and ('Code' in str(cell) or 'Description' in str(cell)) for cell in row):
+                    header_row_index = i
+                    break
+            
+            print(f"Header row index: {header_row_index}")
+            
+            if header_row_index != -1:
+                # 处理数据行
+                line_number = 1
+                start_index = header_row_index + 1
+                
+                for i in range(start_index, len(table)):
+                    row = table[i]
+                    if not row or not any(cell and str(cell).strip() for cell in row):
+                        continue
+                    
+                    row_text = " ".join(str(cell) for cell in row if cell)
+                    # 过滤掉总金额行和其他非数据行
+                    if any(skip_text in row_text for skip_text in ['Total', 'Total Amount', 'EUR', 'Please note', 'Delivery address']):
+                        continue
+                    
+                    # 确保行数据完整
+                    while len(row) < 8:
+                        row.append("")
+                    
+                    # 提取字段
+                    code = str(row[0]).strip() if row[0] else ""
+                    description = str(row[3]).strip() if len(row) > 3 and row[3] else ""
+                    
+                    if not description and len(row) > 2:
+                        description = str(row[2]).strip() if row[2] else ""
+                    
+                    # 提取交货日期
+                    req_date = None
+                    delivery_date_str = ""
+                    if len(row) > 4:
+                        delivery_date_str = str(row[4]).strip() if row[4] else ""
+                        if delivery_date_str:
+                            try:
+                                req_date = datetime.strptime(delivery_date_str, '%d-%m-%Y').date()
+                            except:
+                                pass
+                    
+                    # 提取数量
+                    qty_str = ""
+                    if len(row) > 5:
+                        qty_str = str(row[5]).strip() if row[5] else ""
+                        qty_str = re.sub(r'\s*(pc|pcs)?\s*', '', qty_str, flags=re.IGNORECASE)
+                    
+                    # 提取单价
+                    net_price_str = ""
+                    if len(row) > 6:
+                        net_price_str = str(row[6]).strip() if row[6] else ""
+                        # MAGIC FX格式: 逗号是小数点，点是分位符
+                        net_price_str = net_price_str.replace('.', '').replace(',', '.')
+                        if net_price_str and not any(c in net_price_str for c in ['€', '$', '£']):
+                            net_price_str = f"€{net_price_str}"
+                    
+                    # 提取总价
+                    total_price_str = ""
+                    if len(row) > 7:
+                        total_price_str = str(row[7]).strip() if row[7] else ""
+                        # MAGIC FX格式: 逗号是小数点，点是分位符
+                        total_price_str = total_price_str.replace('.', '').replace(',', '.')
+                        if total_price_str and not any(c in total_price_str for c in ['€', '$', '£']):
+                            total_price_str = f"€{total_price_str}"
+                    
+                    # 跳过空行或不完整的数据
+                    if not description and not qty_str:
+                        continue
+                    
+                    print(f"Processing row {line_number}: Description={description}, Qty={qty_str}")
+                    
+                    # 创建数据行
+                    data_row = {
+                        "po": po_number,
+                        "pn": "N/A",
+                        "line": line_number,
+                        "po_line": f"{po_number}/{line_number}" if po_number else str(line_number),
+                        "description": description,
+                        "qty": parse_decimal(qty_str),
+                        "net_price": parse_decimal(net_price_str),
+                        "total_price": parse_decimal(total_price_str),
+                        "req_date": req_date,
+                        "po_placed_date": po_placed_date,
+                        "eta_wfsz": None,
+                        "shipping_mode": None,
+                        "comment": None,
+                        "purchaser": None,
+                        "qc_result": None,
+                        "shipping_cost": None,
+                        "tracking_no": None,
+                        "so_number": None,
+                        "yes_not_paid": None
+                    }
+                    data.append(data_row)
+                    line_number += 1
+        else:
+            # 没有表格，尝试从PDF文本中提取
+            print(f"No tables found, attempting to extract from text...")
+            
+            # 使用正则表达式从文本中提取数据
+            # 格式：CODE | CODE | 描述(可能多行) | 交货日期 | 数量 | 价格 | 总价
+            # 支持 PROTO (R&D) 和 VARIOUS 代码
+            
+            line_number = 1
+            
+            # 按行分组数据
+            lines = text.split('\n')
+            data_started = False
+            i = 0
+            
+            while i < len(lines):
+                line = lines[i]
+                
+                # 查找数据开始的标记（Code列标题）
+                if 'Code' in line and 'Description' in line:
+                    data_started = True
+                    i += 1
+                    continue
+                
+                if not data_started:
+                    i += 1
+                    continue
+                
+                # 条件：到了终止标记，停止提取
+                if 'Total Amount' in line or 'Delivery address' in line:
+                    break
+                
+                line = line.strip()
+                
+                # 跳过空行
+                if not line:
+                    i += 1
+                    continue
+                
+                # 检查当前行是否以代码开头 (PROTO 或 VARIOUS)
+                code_match = re.match(r'(PROTO\s*\([^)]*\)|VARIOUS)\s+(PROTO\s*\([^)]*\)|VARIOUS)', line)
+                
+                if code_match:
+                    # 这是一个数据行的开始
+                    # 提取数据块的所有部分
+                    # 格式：CODE | CODE | Description | Date | Qty | Price | Total
+                    
+                    # 从代码后提取数据
+                    data_part = line[code_match.end():].strip()
+                    
+                    # 初始化描述
+                    description = ""
+                    delivery_date_str = ""
+                    qty_str = ""
+                    net_price_str = ""
+                    total_price_str = ""
+                    
+                    # 尝试使用正则表达式提取一行中的所有数据
+                    # 日期格式: dd-mm-yyyy
+                    single_line_pattern = r'^(.+?)\s+(\d{2}-\d{2}-\d{4})\s+(\d+)\s*(?:pc|pcs)?\s+([\d.,]+)\s+([\d.,]+)$'
+                    single_match = re.match(single_line_pattern, data_part)
+                    
+                    if single_match:
+                        # 单行数据格式
+                        description = single_match.group(1).strip()
+                        delivery_date_str = single_match.group(2)
+                        qty_str = single_match.group(3)
+                        net_price_str = single_match.group(4)
+                        total_price_str = single_match.group(5)
+                        
+                        # 检查是否有后续的描述延续行
+                        # （即下一行不是新的数据行或终止标记，但是一个纯文本描述行）
+                        if i + 1 < len(lines):
+                            next_line = lines[i + 1].strip()
+                            # 如果下一行不是新的数据行，且不是空行，且不是终止标记
+                            if (next_line and 
+                                not re.match(r'^(PROTO\s*\([^)]*\)|VARIOUS)\s+(PROTO\s*\([^)]*\)|VARIOUS)', next_line) and
+                                'Total Amount' not in next_line and
+                                'Delivery' not in next_line):
+                                # 这可能是描述的延续行
+                                description = description + ' ' + next_line
+                                i += 1  # 跳过这一行
+                    else:
+                        # 尝试多行数据格式
+                        # 收集描述直到找到日期
+                        desc_parts = [data_part]
+                        next_i = i + 1
+                        
+                        while next_i < len(lines):
+                            next_line = lines[next_i].strip()
+                            
+                            # 检查下一行是否以日期开头
+                            date_pattern = r'^(\d{2}-\d{2}-\d{4})\s+'
+                            date_match = re.match(date_pattern, next_line)
+                            
+                            if date_match:
+                                # 找到日期行，提取日期后的所有数据
+                                delivery_date_str = date_match.group(1)
+                                rest_after_date = next_line[date_match.end():].strip()
+                                
+                                # 从日期行提取数量和价格
+                                # 格式：Qty Price Total（可能有pc/pcs）
+                                qty_price_pattern = r'^(\d+)\s*(?:pc|pcs)?\s+([\d.,]+)\s+([\d.,]+)$'
+                                qty_match = re.match(qty_price_pattern, rest_after_date)
+                                
+                                if qty_match:
+                                    qty_str = qty_match.group(1)
+                                    net_price_str = qty_match.group(2)
+                                    total_price_str = qty_match.group(3)
+                                    
+                                    # 合并描述
+                                    description = ' '.join(desc_parts).strip()
+                                    # 移除多余空格
+                                    description = re.sub(r'\s+', ' ', description)
+                                    
+                                    i = next_i  # 更新索引以跳过已处理的行
+                                    break
+                                else:
+                                    # 日期格式不匹配，添加到描述
+                                    desc_parts.append(next_line)
+                            elif re.match(r'^(PROTO\s*\([^)]*\)|VARIOUS)\s+(PROTO\s*\([^)]*\)|VARIOUS)', next_line):
+                                # 遇到新的数据行，停止收集描述
+                                break
+                            elif 'Total Amount' in next_line or 'Delivery' in next_line:
+                                # 遇到终止标记，停止
+                                break
+                            else:
+                                # 继续收集描述
+                                if next_line:  # 跳过空行
+                                    desc_parts.append(next_line)
+                            
+                            next_i += 1
+                    
+                    # 如果成功提取数据，创建数据行
+                    if delivery_date_str and qty_str:
+                        # 解析日期
+                        req_date = None
+                        try:
+                            req_date = datetime.strptime(delivery_date_str, '%d-%m-%Y').date()
+                        except:
+                            pass
+                        
+                        # 清理数据 (MAGIC FX格式: 逗号是小数点，点是分位符)
+                        qty_str = qty_str.replace('.', '').replace(',', '.')
+                        net_price_str = f"€{net_price_str.replace('.', '').replace(',', '.')}"
+                        total_price_str = f"€{total_price_str.replace('.', '').replace(',', '.')}"
+                        
+                        # 生成PN：使用 PO号/行号 作为默认PN
+                        # MAGIC FX订单通常没有具体的零件号，使用PO号-行号作为唯一标识
+                        pn = f"{po_number}-{line_number:02d}" if po_number else f"MFX-{line_number:02d}"
+                        
+                        print(f"Processing row {line_number}: Description={description}, Qty={qty_str}, PN={pn}")
+                        
+                        # 创建数据行
+                        data_row = {
+                            "po": po_number,
+                            "pn": pn,
+                            "line": line_number,
+                            "po_line": f"{po_number}/{line_number}" if po_number else str(line_number),
+                            "description": description,
+                            "qty": parse_decimal(qty_str),
+                            "net_price": parse_decimal(net_price_str),
+                            "total_price": parse_decimal(total_price_str),
+                            "req_date": req_date,
+                            "po_placed_date": po_placed_date,
+                            "eta_wfsz": None,
+                            "shipping_mode": None,
+                            "comment": None,
+                            "purchaser": None,
+                            "qc_result": None,
+                            "shipping_cost": None,
+                            "tracking_no": None,
+                            "so_number": None,
+                            "yes_not_paid": None
+                        }
+                        data.append(data_row)
+                        line_number += 1
+                
+                i += 1
+    
+    print(f"Extracted {len(data)} rows from MAGIC FX PDF")
+    return data
+
+def insert_non_wf_open_magic_fx_data(data_entries):
+    """插入MAGIC FX Non-WF Open表数据"""
+    connection = connect_to_db()
+    if not connection:
+        return 0
+        
+    try:
+        cursor = connection.cursor()
+        success_count = 0
+        error_count = 0
+        
+        for entry in data_entries:
+            try:
+                # 验证 qty * net_price = total_price
+                qty = entry.get('qty')
+                net_price = entry.get('net_price')
+                total_price = entry.get('total_price')
+                
+                # 确保所有值都是数值类型
+                if isinstance(qty, str):
+                    qty = parse_decimal(qty)
+                if isinstance(net_price, str):
+                    net_price = parse_decimal(net_price)
+                if isinstance(total_price, str):
+                    total_price = parse_decimal(total_price)
+                
+                if qty is not None and net_price is not None and total_price is not None:
+                    calculated_total = qty * net_price
+                    # 允许更大的误差范围
+                    if abs(calculated_total - total_price) > Decimal('0.02'):
+                        raise ValueError(f"数据验证失败: qty({qty}) * net_price({net_price}) = {calculated_total}, 但total_price为{total_price}")
+                
+                # 构建动态的列列表
+                columns = []
+                values = []
+                # 确保 'pn' 咺是被包括的（MAGIC FX填表需要）
+                mandatory_columns = ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price']
+                optional_columns = ['req_date', 'po_placed_date']
+                
+                # 先添加强制列
+                for key in mandatory_columns:
+                    if key in entry and entry[key] is not None:
+                        columns.append(key)
+                        values.append(f'%({key})s')
+                
+                # 再添加可选列
+                for key in optional_columns:
+                    if key in entry and entry[key] is not None:
+                        columns.append(key)
+                        values.append(f'%({key})s')
+                
+                if not columns:
+                    raise ValueError("没有有效的数据字段可以插入")
+                
+                # 构建INSERT语句
+                columns_str = ', '.join(columns)
+                values_str = ', '.join(values)
+                
+                # 构建UPDATE语句
+                update_set = []
+                for col in columns:
+                    if col != 'po_line':  # po_line是主键
+                        update_set.append(f'{col} = EXCLUDED.{col}')
+                update_str = ', '.join(update_set) if update_set else 'po = EXCLUDED.po'
+                
+                insert_query = f"""
+                INSERT INTO purchase_orders.non_wf_open 
+                ({columns_str})
+                VALUES ({values_str})
+                ON CONFLICT (po_line) DO UPDATE SET
+                    {update_str}
+                """
+                
+                cursor.execute(insert_query, entry)
+                success_count += 1
+                print(f"成功插入/更新数据: PO={entry['po']}, Line={entry['line']}, Description={entry['description']}")
+                
+            except Exception as e:
+                error_count += 1
+                print(f"插入数据时出错: {e}")
+                print(f"出错数据: {entry}")
+
+        connection.commit()
+        print(f"成功插入 {success_count} 条MAGIC FX Non-WF Open数据，{error_count} 条数据有错误")
+        return success_count
+        
+    except Exception as error:
+        print(f"插入MAGIC FX Non-WF Open数据时出错: {error}")
+        return 0
+    finally:
+        if 'connection' in locals() and connection:
+            cursor.close()
+            connection.close()

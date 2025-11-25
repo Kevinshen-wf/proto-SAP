@@ -518,6 +518,18 @@
             });
         }
         
+        // 货币符号映射
+        const currencyMap = {
+            'wefabricate': '€',
+            'centurion': '$',
+            'magic_fx': '€'
+        };
+        
+        // 获取公司的货币符号
+        function getCurrencySymbol(company) {
+            return currencyMap[company] || '';
+        }
+        
         // 全局变量
         let currentTable = 'wf_open';
         let tableData = [];
@@ -708,14 +720,14 @@
         function getColumnNames(tableName) {
             // 根据表名返回对应的列顺序
             const tableColumns = {
-                'wf_open': ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date_wf', 'eta_wfsz', 'shipping_mode', 'comment', 'po_placed_date', 'purchaser', 'record_no', 'shipping_cost', 'tracking_no', 'so_number', 'latest_departure_date', 'chinese_name', 'unit'],
-                'wf_closed': ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date_wf', 'eta_wfsz', 'shipping_mode', 'comment', 'po_placed_date', 'purchaser', 'record_no', 'shipping_cost', 'tracking_no', 'so_number', 'chinese_name', 'unit'],
-                'non_wf_open': ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date', 'eta_wfsz', 'shipping_mode', 'comment', 'po_placed_date', 'qc_result', 'shipping_cost', 'tracking_no', 'so_number', 'yes_not_paid'],
-                'non_wf_closed': ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date', 'eta_wfsz', 'shipping_mode', 'comment', 'po_placed_date', 'purchaser', 'shipping_cost', 'tracking_no', 'so_number', 'yes_not_paid']
+                'wf_open': ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date_wf', 'eta_wfsz', 'shipping_mode', 'comment', 'po_placed_date', 'purchaser', 'record_no', 'shipping_cost', 'tracking_no', 'so_number', 'latest_departure_date', 'chinese_name', 'unit', 'company'],
+                'wf_closed': ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date_wf', 'eta_wfsz', 'shipping_mode', 'comment', 'po_placed_date', 'purchaser', 'record_no', 'shipping_cost', 'tracking_no', 'so_number', 'chinese_name', 'unit', 'company'],
+                'non_wf_open': ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date', 'eta_wfsz', 'shipping_mode', 'comment', 'po_placed_date', 'qc_result', 'shipping_cost', 'tracking_no', 'so_number', 'yes_not_paid', 'company'],
+                'non_wf_closed': ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date', 'eta_wfsz', 'shipping_mode', 'comment', 'po_placed_date', 'purchaser', 'shipping_cost', 'tracking_no', 'so_number', 'yes_not_paid', 'company']
             };
             
             // 返回对应表的列顺序，如果没有定义则返回默认顺序
-            return tableColumns[tableName] || ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date_wf', 'po_placed_date', 'purchaser'];
+            return tableColumns[tableName] || ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date_wf', 'po_placed_date', 'purchaser', 'company'];
         }
         
         // 获取列的显示名称
@@ -744,7 +756,8 @@
                 'chinese_name': '中文名称',
                 'unit': '单位',
                 'qc_result': '质检结果',
-                'yes_not_paid': '是否已付款'
+                'yes_not_paid': '是否已付款',
+                'company': '公司'
             };
             
             return displayNameMap[columnName] || columnName;
@@ -869,6 +882,15 @@
                         }
                     } else if (value === null || value === 'None' || value === 'null') {
                         displayValue = '';
+                    }
+                    
+                    // 为价格字段添加货币符号
+                    if ((col === 'net_price' || col === 'total_price' || col === 'shipping_cost') && displayValue !== '') {
+                        const company = row['company'] || '';
+                        const currency = getCurrencySymbol(company);
+                        if (currency && !isNaN(parseFloat(displayValue))) {
+                            displayValue = currency + parseFloat(displayValue).toFixed(2);
+                        }
                     }
                     
                     // 确保特殊字符被正确转义

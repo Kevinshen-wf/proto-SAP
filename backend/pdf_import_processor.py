@@ -1,6 +1,6 @@
 import json
 import os
-from backend.db_pdf_processor import extract_wefaricate_data, extract_centurion_data
+from backend.db_pdf_processor import extract_wefaricate_data, extract_centurion_data, extract_magic_fx_data
 from backend.models.database import insert_table_data
 
 class PDFImportProcessor:
@@ -34,12 +34,8 @@ class PDFImportProcessor:
     
     def get_available_companies(self):
         """获取可用的公司列表"""
-        companies = []
-        # 返回所有非保留键的配置项
-        reserved_keys = ['currency_mapping', 'date_formats']
-        for key in self.mapping_config.keys():
-            if key not in reserved_keys:
-                companies.append(key)
+        # 返回固定的公司列表
+        companies = ['wefabricate', 'centurion', 'magic_fx']
         return companies
     
     def add_company_mapping(self, company_name, pdf_patterns, table_columns, database_mapping):
@@ -64,15 +60,15 @@ class PDFImportProcessor:
     
     def process_pdf_by_company(self, pdf_path, company_name):
         """根据公司名称处理PDF文件"""
-        if company_name not in self.mapping_config:
-            raise ValueError(f"未找到公司 {company_name} 的映射配置")
-        
         # 根据公司类型调用相应的处理函数
         if company_name == 'wefabricate':
             data = extract_wefaricate_data(pdf_path)
             return data
         elif company_name == 'centurion':
             data = extract_centurion_data(pdf_path)
+            return data
+        elif company_name == 'magic_fx':
+            data = extract_magic_fx_data(pdf_path)
             return data
         elif company_name.startswith('generic_wf'):
             # 通用WF处理方式
@@ -99,9 +95,13 @@ class PDFImportProcessor:
                     "error": "未从PDF中提取到有效数据"
                 }
             
+            # 为每条数据添加公司字段
+            for item in data:
+                item['company'] = company_name
+            
             # 确定目标表名
             table_name = 'wf_open'
-            if company_name == 'centurion' or 'non_wf' in company_name:
+            if company_name == 'centurion' or company_name == 'magic_fx' or 'non_wf' in company_name:
                 table_name = 'non_wf_open'
             
             # 检查重复数据
@@ -172,6 +172,9 @@ class PDFImportProcessor:
                 print(f"正在处理: {pdf_path}")
                 data = self.process_pdf_by_company(pdf_path, company_name)
                 if data:
+                    # 为每条数据添加公司字段
+                    for item in data:
+                        item['company'] = company_name
                     all_data.extend(data)
                     success_count += 1
                 else:

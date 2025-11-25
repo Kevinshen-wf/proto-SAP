@@ -144,8 +144,15 @@ def main():
         print("访问地址: http://localhost:5000")
         print("按 Ctrl+C 停止应用\n")
         
-        # 启动应用
-        subprocess.run([sys.executable, app_path], check=True)
+        # 程序底预上的上cd到项目根目录，声中准确构建的sys.path
+        original_cwd = os.getcwd()
+        os.chdir(os.path.dirname(__file__))
+        
+        try:
+            # 启动应用
+            subprocess.run([sys.executable, app_path], check=True)
+        finally:
+            os.chdir(original_cwd)
         
     except KeyboardInterrupt:
         print("\n应用已停止")
