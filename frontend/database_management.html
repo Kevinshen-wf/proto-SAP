@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>数据库管理</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         * {
             transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
@@ -13,14 +12,50 @@
         
         body {
             padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f5f7fa;
             min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        /* 根据缩放比例调整body内边距 */
+        @media (min-width: 1600px) {
+            body {
+                padding: 30px 40px;
+            }
+        }
+        @media (min-width: 1200px) and (max-width: 1599px) {
+            body {
+                padding: 25px 35px;
+            }
+        }
+        @media (min-width: 992px) and (max-width: 1199px) {
+            body {
+                padding: 20px 30px;
+            }
+        }
+        @media (max-width: 991px) {
+            body {
+                padding: 15px 20px;
+            }
         }
         
         .container-fluid {
-            max-width: 1400px;
             margin: 0 auto;
+            width: 100%;
+            padding-left: 0;
+            padding-right: 0;
+        }
+        
+        .container-fluid .row {
+            margin-left: 0;
+            margin-right: 0;
+            width: 100%;
+        }
+        
+        .container-fluid .col-md-4,
+        .container-fluid .col-md-8 {
+            padding-left: 0;
+            padding-right: 0;
         }
         
         .header {
@@ -29,29 +64,30 @@
             align-items: center;
             margin-bottom: 30px;
             animation: slideDown 0.5s ease;
+            padding: 0;
         }
         
         .header h1 {
-            font-weight: 700;
-            color: white;
-            font-size: 2.5rem;
+            font-weight: 600;
+            color: #1a202c;
+            font-size: 2rem;
             margin: 0;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-shadow: none;
         }
         
         .user-info {
-            color: white;
+            color: #4a5568;
             display: flex;
             gap: 15px;
             align-items: center;
         }
         
         .user-info a, .user-info button {
-            background: rgba(255,255,255,0.2);
-            border: 1px solid rgba(255,255,255,0.4);
-            color: white;
+            background: white;
+            border: 1px solid #e2e8f0;
+            color: #4a5568;
             padding: 8px 16px;
-            border-radius: 20px;
+            border-radius: 6px;
             text-decoration: none;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -59,9 +95,9 @@
         }
         
         .user-info a:hover, .user-info button:hover {
-            background: rgba(255,255,255,0.3);
-            border-color: rgba(255,255,255,0.6);
-            transform: translateY(-2px);
+            background: #f7fafc;
+            border-color: #cbd5e0;
+            transform: none;
         }
         
         @keyframes slideDown {
@@ -77,11 +113,35 @@
         
         .table-container {
             background: white;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
             margin-bottom: 25px;
             animation: fadeInUp 0.6s ease;
+            border: 1px solid #e2e8f0;
+            overflow-x: auto;
+        }
+        
+        /* 根据缩放比例调整内边距 */
+        @media (min-width: 1600px) {
+            .table-container {
+                padding: 30px 40px;
+            }
+        }
+        @media (min-width: 1200px) and (max-width: 1599px) {
+            .table-container {
+                padding: 25px 35px;
+            }
+        }
+        @media (min-width: 992px) and (max-width: 1199px) {
+            .table-container {
+                padding: 20px 30px;
+            }
+        }
+        @media (max-width: 991px) {
+            .table-container {
+                padding: 15px 20px;
+            }
         }
         
         @keyframes fadeInUp {
@@ -96,10 +156,10 @@
         }
         
         .table-container h5 {
-            color: #667eea;
+            color: #1a202c;
             font-weight: 600;
             margin-bottom: 20px;
-            font-size: 1.3rem;
+            font-size: 1.1rem;
         }
         
         .editable-cell {
@@ -110,13 +170,17 @@
             min-height: 40px;
             display: table-cell;
             vertical-align: middle;
-            color: #333;
+            color: #2d3748;
+            white-space: normal;
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow: visible;
         }
         
         .editable-cell:hover {
-            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
-            border: 1px solid #667eea;
-            box-shadow: inset 0 0 10px rgba(102, 126, 234, 0.1);
+            background: #f7fafc;
+            border: 1px solid #cbd5e0;
+            box-shadow: none;
         }
         
         .editing-cell {
@@ -125,43 +189,99 @@
         
         .editing-cell input, .editing-cell select {
             width: 100%;
-            border: 2px solid #667eea;
+            border: 1px solid #cbd5e0;
             padding: 8px;
             box-sizing: border-box;
             border-radius: 4px;
-            box-shadow: 0 0 10px rgba(102, 126, 234, 0.2);
+            box-shadow: none;
+            font-family: inherit;
+        }
+        
+        /* description-cell 和 comment-cell 中的文本输入框支持换行 */
+        .editing-cell.description-cell input,
+        .editing-cell.comment-cell input {
+            white-space: normal;
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow: visible;
+            min-height: 80px;
+            padding: 10px;
+            line-height: 1.4;
+        }
+        
+        /* textarea 样式 */
+        .editing-cell textarea {
+            font-family: inherit;
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+            padding: 10px;
+            box-sizing: border-box;
+            width: 100%;
+            white-space: normal;
+            word-wrap: break-word;
+            word-break: break-word;
+            line-height: 1.4;
+        }
+        
+        .editing-cell textarea:focus {
+            border-color: #4299e1;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+        }
+        
+        .editing-cell input:focus, .editing-cell select:focus {
+            border-color: #4299e1;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
         }
         
         .date-input {
             width: 100%;
             padding: 8px;
-            border: 2px solid #667eea;
+            border: 1px solid #cbd5e0;
             border-radius: 4px;
             box-sizing: border-box;
-            box-shadow: 0 0 10px rgba(102, 126, 234, 0.2);
+            box-shadow: none;
+        }
+        
+        .date-input:focus {
+            border-color: #4299e1;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
         }
         
         .filter-row {
             margin-bottom: 15px;
             padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
+            background: #f7fafc;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         
-        .filter-row .form-control {
-            width: 100%;
+        .filter-row > .col,
+        .filter-row > div {
+            flex: 0 0 auto;
+            padding-left: 5px;
+            padding-right: 5px;
+            min-width: 200px;
         }
         
-        .filter-row .form-control-sm {
-            padding: 0.4rem 0.6rem;
-            font-size: 0.875rem;
-            border: 1px solid #dee2e6;
-            transition: all 0.3s ease;
+        /* 根据缩放比例调整检索框宽度 */
+        @media (max-width: 1200px) {
+            .filter-row > .col,
+            .filter-row > div {
+                min-width: 150px;
+            }
         }
-        
-        .filter-row .form-control-sm:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 10px rgba(102, 126, 234, 0.2);
+        @media (max-width: 768px) {
+            .filter-row > .col,
+            .filter-row > div {
+                min-width: 100%;
+                flex: 0 0 100%;
+            }
         }
         
         .action-buttons {
@@ -172,74 +292,83 @@
         }
         
         .btn {
-            border-radius: 8px;
+            border-radius: 6px;
             font-weight: 500;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            border: 1px solid transparent;
         }
         
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
+            background: #4299e1;
+            border-color: #4299e1;
             color: white;
         }
         
         .btn-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+            background: #3182ce;
+            border-color: #3182ce;
+            transform: none;
+            box-shadow: 0 2px 6px rgba(66, 153, 225, 0.15);
             color: white;
         }
         
         .btn-success {
-            background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
-            border: none;
+            background: #48bb78;
+            border-color: #48bb78;
             color: white;
         }
         
         .btn-success:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(168, 224, 99, 0.3);
+            background: #38a169;
+            border-color: #38a169;
+            transform: none;
+            box-shadow: 0 2px 6px rgba(72, 187, 120, 0.15);
             color: white;
         }
         
         .btn-danger {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            border: none;
+            background: #f56565;
+            border-color: #f56565;
             color: white;
         }
         
         .btn-danger:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(245, 87, 108, 0.3);
+            background: #e53e3e;
+            border-color: #e53e3e;
+            transform: none;
+            box-shadow: 0 2px 6px rgba(245, 101, 101, 0.15);
             color: white;
         }
         
         .btn-secondary {
-            background: #6c757d;
+            background: #a0aec0;
             border: none;
             color: white;
         }
         
         .btn-secondary:hover {
-            background: #5a6268;
-            transform: translateY(-3px);
+            background: #718096;
+            transform: none;
+            box-shadow: 0 2px 6px rgba(160, 174, 192, 0.15);
         }
         
         .status-message {
             padding: 15px 20px;
-            border-radius: 8px;
+            border-radius: 6px;
             margin-bottom: 20px;
             display: flex;
             align-items: center;
             gap: 10px;
             animation: slideDown 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            border-left: 4px solid transparent;
         }
         
         .success {
-            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background: #f0fdf4;
+            color: #166534;
+            border-left-color: #48bb78;
         }
         
         .success::before {
@@ -249,9 +378,9 @@
         }
         
         .error {
-            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background: #fef2f2;
+            color: #7f1d1d;
+            border-left-color: #f56565;
         }
         
         .error::before {
@@ -261,15 +390,27 @@
         }
         
         .loading {
-            background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
-            color: #0c5460;
-            border: 1px solid #bee5eb;
+            background: #f0f9ff;
+            color: #0c4a6e;
+            border-left-color: #4299e1;
         }
         
         .loading::before {
             content: '⟳';
             display: inline-block;
             animation: spin 1s linear infinite;
+        }
+        
+        .warning {
+            background: #fffbeb;
+            color: #854d0e;
+            border-left-color: #ed8936;
+        }
+        
+        .warning::before {
+            content: '⚠';
+            font-weight: bold;
+            font-size: 1.2rem;
         }
         
         @keyframes spin {
@@ -279,18 +420,21 @@
         
         .table {
             margin-bottom: 0;
+            width: 100%;
+            border-collapse: collapse;
         }
         
         .table th {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
+            background: #f7fafc;
+            color: #2d3748;
+            border: 1px solid #e2e8f0;
             font-weight: 600;
             padding: 12px 8px;
             vertical-align: middle;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            min-width: 80px;
         }
         
         .table td {
@@ -299,39 +443,139 @@
             overflow: hidden;
             text-overflow: ellipsis;
             padding: 10px 8px;
-            color: #333;
+            color: #4a5568;
+            border-color: #e2e8f0;
+            min-width: 80px;
+        }
+        
+        /* Description 和 Comment 列的特殊样式 - 支持换行，使用!important保证优先级 */
+        .table td.description-cell,
+        .table td.comment-cell {
+            white-space: normal !important;
+            word-wrap: break-word !important;
+            word-break: break-word !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            max-width: 1000px !important;
+            min-height: 40px !important;
+            vertical-align: top !important;
+            padding: 10px !important;
+            line-height: 1.4 !important;
+        }
+        
+        /* 响应式：根据屏幕大小调整 Description 和 Comment 的最大宽度 */
+        @media (min-width: 1600px) {
+            .table td.description-cell,
+            .table td.comment-cell {
+                max-width: 1200px !important;
+            }
+        }
+        @media (min-width: 1400px) and (max-width: 1599px) {
+            .table td.description-cell,
+            .table td.comment-cell {
+                max-width: 1100px !important;
+            }
+        }
+        @media (min-width: 1200px) and (max-width: 1399px) {
+            .table td.description-cell,
+            .table td.comment-cell {
+                max-width: 1000px !important;
+            }
+        }
+        @media (min-width: 992px) and (max-width: 1199px) {
+            .table td.description-cell,
+            .table td.comment-cell {
+                max-width: 800px !important;
+            }
+        }
+        @media (min-width: 768px) and (max-width: 991px) {
+            .table td.description-cell,
+            .table td.comment-cell {
+                max-width: 600px !important;
+                font-size: 0.9rem;
+            }
+        }
+        @media (max-width: 767px) {
+            .table td.description-cell,
+            .table td.comment-cell {
+                max-width: 400px !important;
+                font-size: 0.8rem;
+            }
+        }
+        /* 根据缩放比例调整列宽 */
+        @media (min-width: 1600px) {
+            .table th, .table td { min-width: 80px; }
+            /* description 和 comment 列获得更宽的空间 */
+            .table td.description-cell,
+            .table td.comment-cell { min-width: 0; }
+        }
+        @media (min-width: 1400px) and (max-width: 1599px) {
+            .table th, .table td { min-width: 70px; }
+            .table td.description-cell,
+            .table td.comment-cell { min-width: 0; }
+        }
+        @media (min-width: 1200px) and (max-width: 1399px) {
+            .table th, .table td { min-width: 60px; }
+            .table td.description-cell,
+            .table td.comment-cell { min-width: 0; }
+        }
+        @media (min-width: 992px) and (max-width: 1199px) {
+            .table th, .table td { min-width: 50px; }
+            .table td.description-cell,
+            .table td.comment-cell { min-width: 0; }
+        }
+        @media (min-width: 768px) and (max-width: 991px) {
+            .table th, .table td { min-width: 40px; font-size: 0.9rem; }
+            .table td.description-cell,
+            .table td.comment-cell { min-width: 0; }
+        }
+        @media (max-width: 767px) {
+            .table th, .table td { min-width: 30px; font-size: 0.8rem; padding: 8px 6px; }
+            .table td.description-cell,
+            .table td.comment-cell { min-width: 0; }
         }
         
         .table tbody tr:hover {
-            background: #f8f9fa;
-            box-shadow: inset 2px 0 0 #667eea;
+            background: #f7fafc;
+            box-shadow: none;
+            border-left: 3px solid #4299e1;
         }
         
         .table-responsive {
             overflow-x: auto;
             border-radius: 8px;
+            -webkit-overflow-scrolling: touch;
         }
         
         /* 数据验证错误行样式 */
         .invalid-row {
-            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%) !important;
-            color: #721c24;
+            background: #fef2f2 !important;
+            color: #7f1d1d;
         }
         
         .invalid-row:hover {
-            background: linear-gradient(135deg, #f1b0b7 0%, #e88b96 100%) !important;
+            background: #fed7d7 !important;
         }
         
         .invalid-row td {
-            border-color: #f5c6cb !important;
+            border-color: #fca5a5 !important;
         }
         
-        /* 检索框样式调整 */
+        /* 検索框样式调整 */
         .filter-row .col {
             padding-left: 5px;
             padding-right: 5px;
             position: relative;
-            min-width: 120px;
+            min-width: auto;
+        }
+        
+        /* 日期输入框样式 */
+        .date-filter {
+            min-width: 140px;
+        }
+        
+        .date-filter-mode {
+            font-size: 0.875rem;
         }
         
         .clear-filter-btn {
@@ -343,26 +587,69 @@
             width: 100%;
         }
         
+        /* 响应式三屏幕 */
+        @media (max-width: 768px) {
+            .action-buttons {
+                flex-direction: column;
+                width: 100%;
+            }
+            
+            .action-buttons .btn {
+                width: 100%;
+            }
+            
+            .table-container {
+                padding: 15px;
+            }
+            
+            .filter-row {
+                padding: 12px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .user-info {
+                flex-direction: column;
+                width: 100%;
+                gap: 8px;
+            }
+            
+            .user-info a,
+            .user-info button {
+                width: 100%;
+                text-align: center;
+            }
+            
+            .filter-row {
+                padding: 10px;
+            }
+        }
+        
         .pagination {
             gap: 5px;
         }
         
         .page-link {
-            border-radius: 6px;
-            border: 1px solid #dee2e6;
-            color: #667eea;
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+            color: #4a5568;
             transition: all 0.3s ease;
         }
         
         .page-link:hover {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-color: #667eea;
+            background: #f7fafc;
+            color: #4299e1;
+            border-color: #cbd5e0;
         }
         
         .page-item.active .page-link {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-color: #667eea;
+            background: #4299e1;
+            border-color: #4299e1;
+            color: white;
         }
     </style>
 </head>
@@ -381,10 +668,10 @@
         <!-- 导航按钮 -->
         <div class="mb-3">
             <a href="/" class="btn btn-primary">
-                <i class="bi bi-table"></i> 数据库管理
+                📊 数据库管理
             </a>
             <a href="/pdf_import.html" class="btn btn-secondary">
-                <i class="bi bi-cloud-upload"></i> PDF导入
+                📤 PDF导入
             </a>
         </div>
         
@@ -403,10 +690,10 @@
             </div>
             <div class="col-md-8 d-flex align-items-end">
                 <button class="btn btn-primary me-2" onclick="loadTableData()">
-                    <i class="bi bi-arrow-repeat"></i> 刷新数据
+                    🔄 刷新数据
                 </button>
                 <button class="btn btn-success" onclick="showInsertForm()">
-                    <i class="bi bi-plus-circle"></i> 插入新记录
+                    ➕ 插入新记录
                 </button>
             </div>
         </div>
@@ -536,6 +823,7 @@
         let originalData = [];
         let filteredData = []; // 用于存储过滤后的数据
         let columnNames = [];
+        let columns = []; // 表列数组
         let dateColumns = ['req_date_wf', 'eta_wfsz', 'latest_departure_date', 'po_placed_date', 'req_date'];
         let currentEditingCell = null; // 跟踪当前正在编辑的单元格
         // 分页相关变量
@@ -720,8 +1008,8 @@
         function getColumnNames(tableName) {
             // 根据表名返回对应的列顺序
             const tableColumns = {
-                'wf_open': ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date_wf', 'eta_wfsz', 'shipping_mode', 'comment', 'po_placed_date', 'purchaser', 'record_no', 'shipping_cost', 'tracking_no', 'so_number', 'latest_departure_date', 'chinese_name', 'unit', 'company'],
-                'wf_closed': ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date_wf', 'eta_wfsz', 'shipping_mode', 'comment', 'po_placed_date', 'purchaser', 'record_no', 'shipping_cost', 'tracking_no', 'so_number', 'chinese_name', 'unit', 'company'],
+                'wf_open': ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date_wf', 'eta_wfsz', 'wfsz_shipping_mode', 'comment', 'po_placed_date', 'purchaser', 'record_no', 'shipping_cost', 'tracking_no', 'so_number', 'latest_departure_date', 'chinese_name', 'unit', 'company'],
+                'wf_closed': ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date_wf', 'eta_wfsz', 'wfsz_shipping_mode', 'comment', 'po_placed_date', 'purchaser', 'record_no', 'shipping_cost', 'tracking_no', 'so_number', 'chinese_name', 'unit', 'company'],
                 'non_wf_open': ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date', 'eta_wfsz', 'shipping_mode', 'comment', 'po_placed_date', 'qc_result', 'shipping_cost', 'tracking_no', 'so_number', 'yes_not_paid', 'company'],
                 'non_wf_closed': ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date', 'eta_wfsz', 'shipping_mode', 'comment', 'po_placed_date', 'purchaser', 'shipping_cost', 'tracking_no', 'so_number', 'yes_not_paid', 'company']
             };
@@ -745,6 +1033,7 @@
                 'req_date': '要求日期',
                 'eta_wfsz': 'ETA WFSZ',
                 'shipping_mode': '运输方式',
+                'wfsz_shipping_mode': '运输方式',
                 'comment': '备注',
                 'po_placed_date': '采购订单下达日期',
                 'purchaser': '采购员',
@@ -848,7 +1137,7 @@
                 // 发货按钮（仅在Open表显示）
                 if (isOpenTable) {
                     rowHtml += `<button class="btn btn-sm btn-primary me-1" onclick="showShipmentDialog('${po}', '${pn}', '${poLine}', ${rowQty})" title="发货">
-                        <i class="bi bi-box-seam"></i>
+                       📋
                     </button>`;
                 }
                 
@@ -856,7 +1145,7 @@
                 const deleteKey = isOpenTable ? poLine : id;
                 const deleteKeyDisplay = isOpenTable ? poLine : id;
                 rowHtml += `<button class="btn btn-sm btn-danger" onclick="deleteRowRecord('${deleteKey}', '${currentTable}')" title="删除此记录">
-                        <i class="bi bi-trash"></i>
+                        🗑️
                     </button>
                 </td>`;
                 
@@ -889,8 +1178,14 @@
                         const company = row['company'] || '';
                         const currency = getCurrencySymbol(company);
                         if (currency && !isNaN(parseFloat(displayValue))) {
-                            displayValue = currency + parseFloat(displayValue).toFixed(2);
+                            // 显示真实小数位数，不进行四舍五入
+                            displayValue = currency + parseFloat(displayValue);
                         }
+                    }
+                    
+                    // 处理company字段：改布无效值为空字符串
+                    if (col === 'company' && (displayValue === 'undefined' || displayValue === 'null' || displayValue === 'None')) {
+                        displayValue = '';
                     }
                     
                     // 确保特殊字符被正确转义
@@ -900,7 +1195,15 @@
                         .replace(/"/g, '&quot;')
                         .replace(/'/g, '&#039;');
                     
-                    rowHtml += `<td class="editable-cell" data-column="${col}" data-row="${rowIndex}" ondblclick="editCell(this)">${escapedValue}</td>`;
+                    // 为 description 和 comment 列添加特殊的类名以支持换行
+                    let cellClass = 'editable-cell';
+                    if (col === 'description') {
+                        cellClass += ' description-cell';
+                    } else if (col === 'comment') {
+                        cellClass += ' comment-cell';
+                    }
+                    
+                    rowHtml += `<td class="${cellClass}" data-column="${col}" data-row="${rowIndex}" ondblclick="editCell(this)">${escapedValue}</td>`;
                 });
                 
                 rowHtml += '</tr>';
@@ -908,6 +1211,23 @@
             });
             
             body.innerHTML = tableHtml;
+            
+            // 为 description 和 comment 单元格使用 JavaScript 设置样式（在渲染后应用样式）
+            const descriptionCells = body.querySelectorAll('td.description-cell, td.comment-cell');
+            descriptionCells.forEach(cell => {
+                // 计算每个列的最大内容宽度
+                const text = cell.textContent || '';
+                const estimatedWidth = Math.min(text.length * 8 + 20, 800);
+                
+                cell.style.minWidth = estimatedWidth + 'px';
+                cell.style.whiteSpace = 'normal';
+                cell.style.wordWrap = 'break-word';
+                cell.style.wordBreak = 'break-word';
+                cell.style.overflow = 'visible';
+                cell.style.padding = '10px';
+                cell.style.verticalAlign = 'top';
+            });
+            
             paginatedData.forEach((row, index) => {
                 const rowIndex = startIndex + index;
                 const checkQty = parseFloat(row.qty) || 0;
@@ -948,36 +1268,129 @@
                 return;
             }
             
-            // 创建一个单独的行用于过滤器
-            let filterHtml = '<div class="row">';
+            // 清空过滤行
+            let filterHtml = '';
             
             // 为操作列添加清除按钮
             filterHtml += `
-                <div class="col">
+                <div>
                     <button class="btn btn-sm btn-outline-secondary clear-filter-btn" onclick="clearAllFilters()">
-                        <i class="bi bi-x-circle"></i> 清除
+                       ❌ 清除
                     </button>
                 </div>
             `;
             
             // 为每个数据列创建过滤器
             columnNames.forEach((col, index) => {
-                filterHtml += `
-                    <div class="col">
-                        <input type="text" class="form-control form-control-sm" 
-                               placeholder="${col}" 
-                               data-column="${col}"
-                               oninput="filterTable(this)">
-                    </div>
-                `;
+                const isDateColumn = dateColumns.includes(col);
+                
+                if (isDateColumn) {
+                    // 日期列：创建按钮打开弹窗 + 比较模式选择器
+                    filterHtml += `
+                        <div style="display: flex; gap: 5px;">
+                            <button class="btn btn-sm btn-outline-primary" onclick="openDateFilterModal('${col}')" style="white-space: nowrap;">
+                                📅 ${col}
+                            </button>
+                            <select class="form-select form-select-sm date-filter-mode" 
+                                    data-column="${col}"
+                                    style="flex: 0 0 auto; width: 100px;" 
+                                    onchange="filterTable(this)">
+                                <option value="equals">当天</option>
+                                <option value="before">之前</option>
+                                <option value="on_or_after">之后</option>
+                            </select>
+                            <input type="hidden" class="date-filter" data-column="${col}">
+                        </div>
+                    `;
+                } else {
+                    // 普通文本列
+                    filterHtml += `
+                        <div>
+                            <input type="text" class="form-control form-control-sm" 
+                                   placeholder="${col}" 
+                                   data-column="${col}"
+                                   oninput="filterTable(this)">
+                        </div>
+                    `;
+                }
             });
-            
-            filterHtml += '</div>';
             
             filterRow.innerHTML = filterHtml;
             
             // 设置过滤器事件
             setupFilterEvents();
+        }
+        
+        // 打开日期过滤弹窗
+        function openDateFilterModal(column) {
+            // 获取当前日期值（从select的data-date属性读取）
+            const modeSelect = document.querySelector(`.date-filter-mode[data-column="${column}"]`);
+            const currentDate = modeSelect ? modeSelect.getAttribute('data-date') : '';
+            
+            // 创建弹窗
+            const modal = document.createElement('div');
+            modal.className = 'modal fade';
+            modal.id = `dateFilterModal_${column}`;
+            modal.tabIndex = -1;
+            modal.innerHTML = `
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">选择日期 - ${column}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <label class="form-label">选择日期：</label>
+                            <input type="date" id="dateFilterInput_${column}" class="form-control" value="${currentDate || ''}">
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                            <button type="button" class="btn btn-primary" onclick="confirmDateFilter('${column}')">确定</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 添加到页面
+            document.body.appendChild(modal);
+            
+            // 显示弹窗
+            const bsModal = new bootstrap.Modal(modal);
+            bsModal.show();
+            
+            // 弹窗关闭后移除
+            modal.addEventListener('hidden.bs.modal', () => {
+                modal.remove();
+            }, { once: true });
+        }
+        
+        // 确认日期选择
+        function confirmDateFilter(column) {
+            const dateInput = document.getElementById(`dateFilterInput_${column}`);
+            let selectedDate = dateInput.value;
+            
+            // 将日期格式从 YYYY-MM-DD 转换为 YYYY-MM-DD（确保格式一致）
+            if (selectedDate && selectedDate.includes('/')) {
+                // 父换 / 为 -
+                selectedDate = selectedDate.replace(/\//g, '-');
+                console.log(`日期格式转换: ${dateInput.value} => ${selectedDate}`);
+            }
+            
+            // 保存到select的data-date属性
+            const modeSelect = document.querySelector(`.date-filter-mode[data-column="${column}"]`);
+            if (modeSelect) {
+                modeSelect.setAttribute('data-date', selectedDate);
+                console.log(`保存日期: ${column} = ${selectedDate}`);
+            }
+            
+            // 关闭弹窗
+            const modal = bootstrap.Modal.getInstance(document.getElementById(`dateFilterModal_${column}`));
+            if (modal) {
+                modal.hide();
+            }
+            
+            // 应用过滤器
+            applyAllFilters();
         }
         
         // 过滤表格
@@ -988,20 +1401,71 @@
         
         // 应用所有过滤器
         function applyAllFilters() {
-            // 获取所有过滤器输入框
-            const filterInputs = document.querySelectorAll('input[data-column]');
+            // 获取所有日期过滤器的select元素
+            const dateFilterModes = document.querySelectorAll('.date-filter-mode');
             
-            // 保存当前的输入值，避免重新渲染时丢失
-            const currentValues = {};
-            filterInputs.forEach(input => {
-                currentValues[input.getAttribute('data-column')] = input.value;
+            // 获取所有文本输入框
+            const textFilters = document.querySelectorAll('input[data-column]:not(.date-filter)');
+            
+            // 保存当前的输入值
+            const currentDateValues = {};
+            const currentModes = {};
+            const currentTextValues = {};
+            
+            // 从 select 的 data-date 属性读取日期值
+            dateFilterModes.forEach(select => {
+                const col = select.getAttribute('data-column');
+                currentDateValues[col] = select.getAttribute('data-date') || '';
+                currentModes[col] = select.value;
+                console.log(`保存模式: ${col} = ${select.value}, 日期 = ${currentDateValues[col]}`);
             });
             
-            // 从原始数据开始过滤
-            filteredData = [...tableData];
+            textFilters.forEach(input => {
+                currentTextValues[input.getAttribute('data-column')] = input.value;
+            });
             
-            // 应用每个有过滤值的过滤器
-            filterInputs.forEach(input => {
+            // 从原始数据开始过滤以保持日期的原始格式
+            filteredData = originalData.map(row => ({ ...row }));
+            
+            console.log(`开始过滤, 原始数据数: ${filteredData.length}`);
+            
+            // 先应用日期过滤
+            dateFilterModes.forEach(select => {
+                const column = select.getAttribute('data-column');
+                const filterValue = (select.getAttribute('data-date') || '').trim();
+                const mode = select.value || 'equals';
+                
+                console.log(`日期过滤: column=${column}, value=${filterValue}, mode=${mode}`);
+                
+                if (filterValue) {
+                    const beforeCount = filteredData.length;
+                    
+                    filteredData = filteredData.filter(row => {
+                        const cellValue = (row[column] || '').toString().trim();
+                        
+                        // 空日期不参与过滤 - 返回 false 排除空值
+                        if (!cellValue || cellValue === 'undefined') {
+                            return false;
+                        }
+                        
+                        // 提取日期部分（处理可能的时间和其他沄污）
+                        // 设定仄正格式为 YYYY-MM-DD
+                        const cellDate = extractDateOnly(cellValue);
+                        const result = compareDate(cellDate, filterValue, mode);
+                        
+                        if (result) {
+                            console.log(`  ✓ ${cellDate} ${mode} ${filterValue}`);
+                        }
+                        return result;
+                    });
+                    
+                    const afterCount = filteredData.length;
+                    console.log(`  结果: ${beforeCount} -> ${afterCount}`);
+                }
+            });
+            
+            // 然后应用文本过滤
+            textFilters.forEach(input => {
                 const column = input.getAttribute('data-column');
                 const filterValue = input.value.trim().toLowerCase();
                 
@@ -1013,21 +1477,103 @@
                 }
             });
             
+            console.log(`最终结果: ${filteredData.length}`);
+            
             // 重置到第一页并重新渲染
             currentPage = 1;
             renderTableBody();
             updateRecordCount();
             renderPagination();
+        }
+        
+        // 删除这个重复的定义，使用下面的版本
+        
+        // 初始化表格
+        function initTable() {
+            renderTableBody();
+            updateRecordCount();
+            renderPagination();
+        }
+        
+        // 初始化数据
+        function initData() {
+            tableData = [
+                { name: 'Alice', age: 25, date: '2023-01-01' },
+                { name: 'Bob', age: 30, date: '2023-02-15' },
+                { name: 'Charlie', age: 35, date: '2023-03-20' },
+                { name: 'David', age: 40, date: '2023-04-25' },
+                { name: 'Eve', age: 45, date: '2023-05-30' },
+                { name: 'Frank', age: 50, date: '2023-06-05' },
+                { name: 'Grace', age: 55, date: '2023-07-10' },
+                { name: 'Hannah', age: 60, date: '2023-08-15' },
+                { name: 'Ivy', age: 65, date: '2023-09-20' },
+                { name: 'Jack', age: 70, date: '2023-10-25' },
+                { name: 'Kathy', age: 75, date: '2023-11-30' },
+                { name: 'Liam', age: 80, date: '2023-12-05' },
+                { name: 'Mia', age: 85, date: '2023-12-10' },
+                { name: 'Noah', age: 90, date: '2023-12-15' },
+                { name: 'Olivia', age: 95, date: '2023-12-20' },
+                { name: 'Paul', age: 100, date: '2023-12-25' },
+                { name: 'Quinn', age: 105, date: '2024-01-01' },
+                { name: 'Rachel', age: 110, date: '2024-01-05' },
+                { name: 'Sam', age: 115, date: '2024-01-10' },
+                { name: 'Tina', age: 120, date: '2024-01-15' },
+            ];
             
-            // 恢复输入框的值
-            setTimeout(() => {
-                filterInputs.forEach(input => {
-                    const column = input.getAttribute('data-column');
-                    if (currentValues[column] !== undefined) {
-                        input.value = currentValues[column];
-                    }
-                });
-            }, 0);
+            columns = Object.keys(tableData[0]);
+            
+            initTable();
+        }
+        
+        // 提取YYYY-MM-DD格式的日期
+        function extractDateOnly(dateString) {
+            if (!dateString) return '';
+            
+            // 是否已经YYYY-MM-DD格式
+            if (dateString.match(/^\d{4}-\d{2}-\d{2}/)) {
+                return dateString.substring(0, 10);
+            }
+            
+            // 是否是GMT或其他日期字符串，需要解析
+            try {
+                const date = new Date(dateString);
+                if (!isNaN(date.getTime())) {
+                    // 转换为YYYY-MM-DD格式
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                }
+            } catch (e) {
+                console.warn(`日期解析失败: ${dateString}`);
+            }
+            
+            return dateString;
+        }
+        
+        // 比较日期的辅助函数
+        function compareDate(cellDate, filterDate, mode) {
+            console.log(`compareDate: cellDate=${cellDate}, filterDate=${filterDate}, mode=${mode}`);
+            
+            // 使用字符串比较（YYYY-MM-DD格式）
+            if (mode === 'equals') {
+                // 当天：完全相等
+                const result = cellDate === filterDate;
+                console.log(`  equals: ${cellDate} === ${filterDate} = ${result}`);
+                return result;
+            } else if (mode === 'before') {
+                // 之前：小于等于（包含当天）
+                const result = cellDate <= filterDate;
+                console.log(`  before: ${cellDate} <= ${filterDate} = ${result}`);
+                return result;
+            } else if (mode === 'on_or_after') {
+                // 之后：大于等于（包含当天）
+                const result = cellDate >= filterDate;
+                console.log(`  on_or_after: ${cellDate} >= ${filterDate} = ${result}`);
+                return result;
+            }
+            
+            return true;
         }
         
         // 为过滤器添加回车键事件
@@ -1050,14 +1596,25 @@
         
         // 清除所有过滤器
         function clearAllFilters() {
-            // 清除所有过滤器输入框的值
-            const filterInputs = document.querySelectorAll('input[data-column]');
-            filterInputs.forEach(input => {
+            // 清除所有日期输入框的值
+            const dateFilters = document.querySelectorAll('input.date-filter');
+            const dateFilterModes = document.querySelectorAll('.date-filter-mode');
+            const textFilters = document.querySelectorAll('input[data-column]:not(.date-filter)');
+            
+            dateFilters.forEach(input => {
+                input.value = '';
+            });
+            
+            dateFilterModes.forEach(select => {
+                select.value = 'equals';
+            });
+            
+            textFilters.forEach(input => {
                 input.value = '';
             });
             
             // 重置过滤数据为原始数据
-            filteredData = [...tableData];
+            filteredData = originalData.map(row => ({ ...row }));
             
             // 重置到第一页并重新渲染
             currentPage = 1;
@@ -1102,6 +1659,12 @@
                 backdrop: true,
                 keyboard: true
             });
+            
+            // 添加Modal关闭事件监听，确保滚动条恢复
+            modalElement.addEventListener('hidden.bs.modal', function() {
+                document.body.style.overflow = 'auto';
+            }, { once: true });
+            
             modal.show();
         }
         
@@ -1117,7 +1680,7 @@
             // 正常化体的样式
             document.body.classList.remove('modal-open');
             document.body.style.paddingRight = '';
-            document.body.style.overflow = '';
+            document.body.style.overflow = 'auto';
         }
         
         // 编辑单元格
@@ -1178,6 +1741,19 @@
                 }
                 inputHtml = `<input type="date" class="date-input" 
                                      data-original-value="${dateValue}">`;
+            } else if (columnName === 'shipping_mode' || columnName === 'wfsz_shipping_mode') {
+                // 为 shipping_mode 或 wfsz_shipping_mode 使用下拉框
+                const shippingModeOptions = ['sea', 'air', 'train', 'truck'];
+                let optionsHtml = '';
+                optionsHtml += '<option value=""></option>'; // 空选项
+                shippingModeOptions.forEach(option => {
+                    const selected = currentValue === option ? 'selected' : '';
+                    optionsHtml += `<option value="${option}" ${selected}>${option}</option>`;
+                });
+                inputHtml = `<select class="form-select" data-original-value="${currentValue}" style="width: 100%; padding: 8px;">${optionsHtml}</select>`;
+            } else if (columnName === 'description' || columnName === 'comment') {
+                // 为 description 和 comment 使用多行文本框
+                inputHtml = `<textarea class="form-control" style="min-height: 100px; resize: vertical;">${currentValue}</textarea>`;
             } else {
                 inputHtml = `<input type="text" value="${currentValue}" 
                                      data-original-value="${currentValue}">`;
@@ -1186,20 +1762,29 @@
             cell.innerHTML = inputHtml;
             cell.classList.add('editing-cell');
             cell.classList.remove('editable-cell');
+            // 保持 description-cell 或 comment-cell 的样式类在编辑时也适用
+            // 这样换行样式在编辑时也能保持
             
             // 聚焦到新创建的输入框
-            const input = cell.querySelector('input');
+            const input = cell.querySelector('input, textarea, select');
             if (input) {
                 // 对于日期输入框，单独设置value属性
                 if (dateColumns.includes(columnName)) {
                     input.value = dateValue;
+                } else if (columnName === 'shipping_mode' || columnName === 'wfsz_shipping_mode') {
+                    // select 元素已经有 data-original-value 和选中的值，直接聚焦
+                    // 无需额外处理
+                } else if (columnName === 'description' || columnName === 'comment') {
+                    // textarea 已经设置了值，设置 data-original-value 属性
+                    input.setAttribute('data-original-value', currentValue);
+                    input.select();
                 } else {
                     // 对于文本输入框，选择所有文本以便编辑
                     input.select();
                 }
                 input.focus();
                 
-                // 为两种类型的输入框都添加键盘事件监听
+                // 为输入框和下拉框都添加键盘事件监听
                 input.addEventListener('keydown', function(event) {
                     if (event.key === 'Escape') {
                         event.preventDefault();
@@ -1210,7 +1795,8 @@
                         cell.classList.remove('editing-cell');
                         cell.classList.add('editable-cell');
                         currentEditingCell = null;
-                    } else if (event.key === 'Enter') {
+                    } else if (event.key === 'Enter' && input.tagName !== 'TEXTAREA' && input.tagName !== 'SELECT') {
+                        // Enter键仅对非textarea和非select生效
                         event.preventDefault();
                         event.stopPropagation();
                         // Enter键触发保存逻辑
@@ -1235,11 +1821,65 @@
                             cell.classList.add('editable-cell');
                             currentEditingCell = null;
                         }
+                    } else if (event.key === 'Enter' && event.ctrlKey && input.tagName === 'TEXTAREA') {
+                        // Ctrl+Enter为textarea预留的保存键
+                        event.preventDefault();
+                        event.stopPropagation();
+                        // Ctrl+Enter键触发保存逻辑
+                        const originalValue = input.getAttribute('data-original-value');
+                        const currentInputValue = input.value;
+                    } else if (event.key === 'Enter' && input.tagName === 'SELECT') {
+                        // Enter键为select触发保存逻辑
+                        event.preventDefault();
+                        event.stopPropagation();
+                        const originalValue = input.getAttribute('data-original-value');
+                        const currentInputValue = input.value;
+                        
+                        // 检查值是否有变化
+                        if (originalValue !== currentInputValue) {
+                            // 弹出确认对话框
+                            showConfirmModal(`数据已修改，是否保存更改？<br><strong>原值:</strong> ${originalValue || '(空)'}<br><strong>新值:</strong> ${currentInputValue || '(空)'}`, function() {
+                                // 确认保存
+                                cell.textContent = currentInputValue || '';
+                                cell.classList.remove('editing-cell');
+                                cell.classList.add('editable-cell');
+                                updateCellValue(rowIndex, columnName, currentInputValue);
+                                currentEditingCell = null;
+                            });
+                        } else {
+                            // 没有修改，直接关闭
+                            cell.textContent = originalValue || '';
+                            cell.classList.remove('editing-cell');
+                            cell.classList.add('editable-cell');
+                            currentEditingCell = null;
+                        }
                     }
                 });
                 
-                // 监听输入框失去焦点事件
+                // 监听输入框失去焦点事件（包括select）
                 input.addEventListener('blur', function(e) {
+                    // 对于select元素，blur时直接保存
+                    if (input.tagName === 'SELECT') {
+                        const originalValue = input.getAttribute('data-original-value');
+                        const currentInputValue = input.value;
+                        
+                        if (originalValue !== currentInputValue) {
+                            showConfirmModal(`数据已修改，是否保存更改？<br><strong>原值:</strong> ${originalValue || '(空)'}<br><strong>新值:</strong> ${currentInputValue || '(空)'}`, function() {
+                                cell.textContent = currentInputValue || '';
+                                cell.classList.remove('editing-cell');
+                                cell.classList.add('editable-cell');
+                                updateCellValue(rowIndex, columnName, currentInputValue);
+                                currentEditingCell = null;
+                            });
+                        } else {
+                            cell.textContent = originalValue || '';
+                            cell.classList.remove('editing-cell');
+                            cell.classList.add('editable-cell');
+                            currentEditingCell = null;
+                        }
+                        return;
+                    }
+                    
                     // 延迟执行，确保不会与点击事件冲突
                     setTimeout(() => {
                         // 检查单元格是否仍处于编辑状态

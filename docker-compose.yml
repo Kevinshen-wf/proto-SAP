@@ -1,0 +1,74 @@
+services:
+  # PostgreSQL数据库服务
+  postgres:
+    image: postgres:15-alpine
+    container_name: proto-sap-db
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-pgsql}
+      POSTGRES_DB: ${DB_NAME:-purchase_orders}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - proto-sap-network
+
+  # Flask后端服务
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: proto-sap-backend
+    command: sh -c "python init_db.py && python -m flask --app backend.web_app run --host=0.0.0.0 --port=5000 --reload"
+    environment:
+      DB_HOST: postgres
+      DB_NAME: ${DB_NAME:-purchase_orders}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-pgsql}
+      DB_PORT: 5432
+      APP_HOST: 0.0.0.0
+      APP_PORT: 5000
+      APP_DEBUG: ${APP_DEBUG:-False}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-wefabricate_secret_key_2025}
+      SMTP_SERVER: ${SMTP_SERVER:-smtp.qq.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SENDER_EMAIL: ${SENDER_EMAIL:-shenkaiwen61@qq.com}
+      SENDER_PASSWORD: ${SENDER_PASSWORD:-}
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:5000}
+      EMAIL_ENABLED: ${EMAIL_ENABLED:-true}
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app/backend
+      - ./frontend:/app/frontend
+      - ./uploads:/app/uploads
+      - ./pdf_samples:/app/pdf_samples
+      - ./init_db.py:/app/init_db.py
+      - ./requirements.txt:/app/requirements.txt
+      - ./config:/app/config
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - proto-sap-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5000/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  proto-sap-network:
+    driver: bridge

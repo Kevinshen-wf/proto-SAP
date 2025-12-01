@@ -55,7 +55,9 @@ def create_wf_open_table(cursor):
             so_number VARCHAR(50),
             latest_departure_date DATE,
             chinese_name VARCHAR(100),
-            unit VARCHAR(20)
+            unit VARCHAR(20),
+            eta_wfsz DATE,
+            company VARCHAR(100)
         )
         """
         cursor.execute(create_table_query)
@@ -89,7 +91,9 @@ def create_wf_closed_table(cursor):
             so_number VARCHAR(50),
             latest_departure_date DATE,
             chinese_name VARCHAR(100),
-            unit VARCHAR(20)
+            unit VARCHAR(20),
+            eta_wfsz DATE,
+            company VARCHAR(100)
         )
         """
         cursor.execute(create_table_query)
@@ -111,6 +115,7 @@ def create_non_wf_open_table(cursor):
             req_date DATE,
             po_placed_date DATE,
             eta DATE,
+            eta_wfsz DATE,
             shipping_mode VARCHAR(100),
             comment TEXT,
             record_no VARCHAR(50),
@@ -121,7 +126,8 @@ def create_non_wf_open_table(cursor):
             qc_result VARCHAR(50),
             yes_not_paid VARCHAR(10),
             line VARCHAR(50),
-            po_line VARCHAR(100) PRIMARY KEY
+            po_line VARCHAR(100) PRIMARY KEY,
+            company VARCHAR(100)
         )
         """
         cursor.execute(create_table_query)
@@ -144,6 +150,7 @@ def create_non_wf_closed_table(cursor):
             req_date DATE,
             po_placed_date DATE,
             eta DATE,
+            eta_wfsz DATE,
             shipping_mode VARCHAR(100),
             comment TEXT,
             record_no VARCHAR(50),
@@ -154,7 +161,8 @@ def create_non_wf_closed_table(cursor):
             purchaser VARCHAR(100),
             yes_not_paid VARCHAR(10),
             line VARCHAR(50),
-            po_line VARCHAR(100)
+            po_line VARCHAR(100),
+            company VARCHAR(100)
         )
         """
         cursor.execute(create_table_query)
@@ -187,39 +195,88 @@ def create_users_table(cursor):
     except Exception as e:
         print(f"✗ 创建用户表时出错: {e}")
 
+def create_po_records_table(cursor):
+    """创建操作记录表"""
+    try:
+        create_table_query = """
+        CREATE TABLE IF NOT EXISTS purchase_orders.po_records (
+            id SERIAL PRIMARY KEY,
+            user_email VARCHAR(255) NOT NULL,
+            table_name VARCHAR(100) NOT NULL,
+            operation VARCHAR(20) NOT NULL,
+            record_data JSONB NOT NULL,
+            operation_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+        cursor.execute(create_table_query)
+        
+        # 创建索引
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_po_records_user_email ON purchase_orders.po_records(user_email)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_po_records_table_name ON purchase_orders.po_records(table_name)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_po_records_operation ON purchase_orders.po_records(operation)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_po_records_operation_time ON purchase_orders.po_records(operation_time)")
+        
+        print("✓ 成功创建操作记录表")
+    except Exception as e:
+        print(f"✗ 创建操作记录表时出错: {e}")
+
 def main():
     """主函数"""
     print("开始初始化数据库...")
+    print(f"数据库配置: host={os.getenv('DB_HOST', 'localhost')}, ")
+    print(f"            db={os.getenv('DB_NAME', 'purchase_orders')}")
+    print()
     
-    try:
-        # 连接数据库
-        db_config = get_db_config()
-        connection = psycopg2.connect(**db_config)
-        cursor = connection.cursor()
-        
-        print("✓ 成功连接到数据库")
-        
-        # 创建模式和表
-        create_purchase_orders_schema(cursor)
-        create_wf_open_table(cursor)
-        create_wf_closed_table(cursor)
-        create_non_wf_open_table(cursor)
-        create_non_wf_closed_table(cursor)
-        create_users_table(cursor)  # 添加用户表创建
-        
-        # 提交更改
-        connection.commit()
-        print("✓ 所有数据库对象创建完成")
-        
-    except Exception as e:
-        print(f"✗ 数据库初始化过程中出错: {e}")
-        if 'connection' in locals():
-            connection.rollback()
-    finally:
-        if 'connection' in locals() and connection:
-            cursor.close()
-            connection.close()
-            print("✓ 数据库连接已关闭")
+    max_retries = 5
+    retry_count = 0
+    
+    while retry_count < max_retries:
+        try:
+            # 连接数据库
+            db_config = get_db_config()
+            connection = psycopg2.connect(**db_config)
+            cursor = connection.cursor()
+            
+            print("✓ 成功连接到数据库")
+            print()
+            
+            # 创建模式和表
+            create_purchase_orders_schema(cursor)
+            create_wf_open_table(cursor)
+            create_wf_closed_table(cursor)
+            create_non_wf_open_table(cursor)
+            create_non_wf_closed_table(cursor)
+            create_users_table(cursor)
+            create_po_records_table(cursor)
+            
+            # 提交更改
+            connection.commit()
+            print()
+            print("✓ 所有数据库对象创建完成")
+            print()
+            return True
+            
+        except psycopg2.OperationalError as e:
+            retry_count += 1
+            print(f"✗ 数据库连接失败 (尝试 {retry_count}/{max_retries}): {e}")
+            if retry_count < max_retries:
+                print(f"  {5}秒后重试...")
+                import time
+                time.sleep(5)
+            else:
+                print(f"✗ 无法连接到数据库，已放弃")
+                return False
+                
+        except Exception as e:
+            print(f"✗ 数据库初始化过程中出错: {e}")
+            if 'connection' in locals():
+                connection.rollback()
+            return False
+            
+        finally:
+            if 'connection' in locals() and connection:
+                cursor.close()
+                connection.close()
 
 if __name__ == "__main__":
     main()

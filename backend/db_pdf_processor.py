@@ -168,19 +168,33 @@ def extract_wefaricate_data(pdf_path):
                 'purchaser': purchaser
             }
             
-            # 假设第一个表格包含订单项数据
-            if page_info['table']:
-                table = page_info['table']
-                print(f"Found table with {len(table)} rows")
+            # 处理所有表格中的数据
+            tables_to_process = tables if tables else []
+            
+            for table_idx, table in enumerate(tables_to_process):
+                if not table:
+                    continue
                 
-                # 查找表头行 (更灵活的匹配)
+                print(f"Processing table {table_idx + 1}/{len(tables_to_process)} with {len(table)} rows")
+                
+                # 检测表格的列结构
                 header_row_index = -1
+                table_structure = 'standard'  # 默认标准结构
+                
                 for i, row in enumerate(table):
-                    if row and any(cell and ('Item' in str(cell) or 'ID' in str(cell)) for cell in row):
+                    if row and any(cell and ('Item' in str(cell) or 'Description' in str(cell) or 'Expected Value' in str(cell)) for cell in row):
                         header_row_index = i
+                        # 检测列结构
+                        header_text = " ".join(str(cell).strip() for cell in row if cell)
+                        if 'Expected Value' in header_text and 'ID' not in header_text:
+                            # 这是简化结构：Item | Description | Expected Value
+                            table_structure = 'simple'
+                        else:
+                            # 标准结构：Item | ID | Description | Quantity | Net Price | Net Value
+                            table_structure = 'standard'
                         break
                 
-                print(f"Header row index: {header_row_index}")
+                print(f"Header row index: {header_row_index}, Structure: {table_structure}")
                 
                 # 处理数据行
                 start_index = header_row_index + 1 if header_row_index >= 0 else 0
@@ -211,6 +225,7 @@ def extract_wefaricate_data(pdf_path):
                                             print(f"解析到Schedule Lines日期: {date_cell} -> {req_date}")
                                             # 存储Schedule Lines信息
                                             page_info['schedule_lines'].append({
+                                                'table_idx': table_idx,  # 此次会话指的是哪个表格
                                                 'table_row_index': i,  # Schedule Lines行在表格中的索引
                                                 'date_row_index': schedule_lines_index,  # 日期行在表格中的索引
                                                 'req_date': req_date,
@@ -219,6 +234,40 @@ def extract_wefaricate_data(pdf_path):
                                             })
                                         except Exception as e:
                                             print(f"日期解析失败: {date_cell}, 错误: {e}")
+                            continue
+                        
+                        # 检查是否为Schedule Lines日期行（可能不包含"Schedule Lines:"文本）
+                        # 判断标准：第一列为空，且第四列或第五列包含日期格式
+                        cell0 = str(row[0]).strip() if len(row) > 0 and row[0] else ""
+                        cell4 = str(row[4]).strip() if len(row) > 4 and row[4] else ""
+                        cell5 = str(row[5]).strip() if len(row) > 5 and row[5] else ""
+                        
+                        # 检查这行是否是Schedule Lines日期行
+                        is_schedule_date_row = (not cell0 and (re.match(r'[A-Za-z]+\s*\d{1,2},\s*\d{4}', cell4) or re.match(r'[A-Za-z]+\s*\d{1,2},\s*\d{4}', cell5)))
+                        if is_schedule_date_row:
+                            print(f"发现Schedule Lines日期行 {i}: {row_text[:60]}")
+                            # 尝试从cell4或cell5提取日期
+                            date_cell = ""
+                            if re.match(r'[A-Za-z]+\s*\d{1,2},\s*\d{4}', cell4):
+                                date_cell = cell4
+                            elif re.match(r'[A-Za-z]+\s*\d{1,2},\s*\d{4}', cell5):
+                                date_cell = cell5
+                            
+                            if date_cell:
+                                try:
+                                    req_date = parse_date(date_cell)
+                                    print(f"解析到Schedule Lines日期（行）: {date_cell} -> {req_date}")
+                                    # 存储Schedule Lines信息
+                                    page_info['schedule_lines'].append({
+                                        'table_idx': table_idx,  # 此次会话指的是哪个表格
+                                        'table_row_index': i,  # Schedule Lines行在表格中的索引
+                                        'date_row_index': i,   # 日期就在这一行
+                                        'req_date': req_date,
+                                        'date_cell': date_cell,
+                                        'quantity': cell0 or cell4.split()[0] if cell4 else ""
+                                    })
+                                except Exception as e:
+                                    print(f"日期解析失败: {date_cell}, 错误: {e}")
                             continue
                         
                         # 确保行数据完整
@@ -234,75 +283,122 @@ def extract_wefaricate_data(pdf_path):
                         net_value = ""
                         req_date = None
                         
-                        # 提取Item编号
-                        if len(row) > 0:
-                            cell0 = str(row[0]).strip() if row[0] else ""
-                            # 检查是否为Item编号（数字格式）
-                            if re.match(r'^\d+$', cell0):
-                                item = cell0
-                                print(f"提取到Item编号: {item}")
-                            else:
-                                print(f"无效的Item编号: '{cell0}'")
-                        
-                        # 提取ID (不一定需要符合xxxx-xxxx-xxxx格式)
-                        if len(row) > 1:
-                            id_part = str(row[1]).strip() if row[1] else ""
-                            print(f"提取到ID: '{id_part}'")
-                            # 验证ID格式(如果存在就必须符合xxxx-xxxx-xxxx模式)
-                            if id_part and not re.match(r'^\d{4}-\d{4}-\d{4}$', id_part):
-                                print(f"跳过不符合格式的ID: '{id_part}'")
-                                # 不立即跳过，而是继续处理其他字段，稍后再决定是否添加数据行
-                        
-                        # 提取描述
-                        if len(row) > 2:
-                            description = str(row[2]).strip() if row[2] else ""
-                        
-                        # 提取数量 (正确处理逗号分隔的数字)
-                        if len(row) > 3:
-                            quantity_cell = str(row[3]).strip() if row[3] else ""
-                            # 提取数量（数字），正确处理逗号
-                            qty_match = re.search(r'([\d,]+)(?:\.\d+)?', quantity_cell)
-                            if qty_match:
-                                # 移除逗号并获取数量
-                                quantity = qty_match.group(1).replace(',', '')
-                        
-                        # 提取价格信息
-                        if len(row) > 4:
-                            net_price_raw = str(row[4]).strip() if row[4] else ""
-                            # 解析欧元价格
-                            net_price, _ = parse_eur_price(net_price_raw)
-                            print(f"Price parsing: raw='{net_price_raw}', unit='{net_price}'")
-                        
-                        # 确保总是从第6列获取Net Value（Total Price）
-                        if len(row) > 5:
-                            net_value_raw = str(row[5]).strip() if row[5] else ""
-                            print(f"Raw net value: '{net_value_raw}'")
-                            # 如果第五列有总价，使用它
-                            if net_value_raw and ('€' in net_value_raw or 'EUR' in net_value_raw or re.search(r'[\d,]+\.?\d*', net_value_raw)):
-                                # 清理Net Value，只保留货币符号和数字
-                                net_value = clean_currency_value(net_value_raw.replace('EUR', '€'))
-                            else:
-                                # 如果没有有效的net_value_raw，但有数值，添加欧元符号
-                                if net_value_raw and re.search(r'[\d,]+\.?\d*', net_value_raw):
-                                    # 提取数字并添加欧元符号
-                                    number_match = re.search(r'[\d,]+\.?\d*', net_value_raw.replace(',', ''))
-                                    if number_match:
-                                        net_value = f"€{number_match.group(0)}"
+                        if table_structure == 'simple':
+                            # 简化结构：Item | Description | Expected Value
+                            if len(row) > 0:
+                                cell0 = str(row[0]).strip() if row[0] else ""
+                                if re.match(r'^\d+$', cell0):
+                                    item = cell0
+                                    print(f"提取到Item编号: {item}")
+                                else:
+                                    print(f"无效的Item编号: '{cell0}'")
+                            if len(row) > 1:
+                                description = str(row[1]).strip() if row[1] else ""
+                            if len(row) > 2:
+                                net_value_raw = str(row[2]).strip() if row[2] else ""
+                                print(f"Raw net value: '{net_value_raw}'")
+                                if net_value_raw and ('€' in net_value_raw or 'EUR' in net_value_raw or re.search(r'[\d,]+\.?\d*', net_value_raw)):
+                                    net_value = clean_currency_value(net_value_raw.replace('EUR', '€'))
+                                else:
+                                    if net_value_raw and re.search(r'[\d,]+\.?\d*', net_value_raw):
+                                        number_match = re.search(r'[\d,]+\.?\d*', net_value_raw.replace(',', ''))
+                                        if number_match:
+                                            net_value = f"€{number_match.group(0)}"
+                                        else:
+                                            net_value = net_value_raw
                                     else:
                                         net_value = net_value_raw
+                            id_part = ""  # 简化结构无ID
+                            quantity = ""  # 简化结构无Quantity
+                            net_price = net_value  # 特殊情况：net_price = net_value
+                        else:
+                            # 标准结构：Item | ID | Description | Quantity | Net Price | Net Value
+                            # 提取Item编号
+                            if len(row) > 0:
+                                cell0 = str(row[0]).strip() if row[0] else ""
+                                # 检查是否为Item编号（数字格式）
+                                if re.match(r'^\d+$', cell0):
+                                    item = cell0
+                                    print(f"提取到Item编号: {item}")
                                 else:
-                                    net_value = net_value_raw
-                        
+                                    print(f"无效的Item编号: '{cell0}'")
+                            
+                            # 提取ID (不一定需要符合xxxx-xxxx-xxxx格式)
+                            if len(row) > 1:
+                                id_part = str(row[1]).strip() if row[1] else ""
+                                print(f"提取到ID: '{id_part}'")
+                                # 验证ID格式(如果存在就必须符合xxxx-xxxx-xxxx模式)
+                                if id_part and not re.match(r'^\d{4}-\d{4}-\d{4}$', id_part):
+                                    print(f"跳过不符合格式的ID: '{id_part}'")
+                                    # 不立即跳过，而是继续处理其他字段，稍后再决定是否添加数据行
+                            
+                            # 提取描述
+                            if len(row) > 2:
+                                description = str(row[2]).strip() if row[2] else ""
+                            
+                            # 提取数量 (正确处理逗号分隔的数字)
+                            if len(row) > 3:
+                                quantity_cell = str(row[3]).strip() if row[3] else ""
+                                # 提取数量（数字），正确处理逗号
+                                qty_match = re.search(r'([\d,]+)(?:\.\d+)?', quantity_cell)
+                                if qty_match:
+                                    # 移除逗号并获取数量
+                                    quantity = qty_match.group(1).replace(',', '')
+                            
+                            # 提取价格信息
+                            if len(row) > 4:
+                                net_price_raw = str(row[4]).strip() if row[4] else ""
+                                # 解析欧元价格
+                                net_price, _ = parse_eur_price(net_price_raw)
+                                print(f"Price parsing: raw='{net_price_raw}', unit='{net_price}'")
+                            
+                            # 确保总是从第6列获取Net Value（Total Price）
+                            if len(row) > 5:
+                                net_value_raw = str(row[5]).strip() if row[5] else ""
+                                print(f"Raw net value: '{net_value_raw}'")
+                                # 如果第五列有总价，使用它
+                                if net_value_raw and ('€' in net_value_raw or 'EUR' in net_value_raw or re.search(r'[\d,]+\.?\d*', net_value_raw)):
+                                    # 清理Net Value，只保留货币符号和数字
+                                    net_value = clean_currency_value(net_value_raw.replace('EUR', '€'))
+                                else:
+                                    # 如果没有有效的net_value_raw，但有数值，添加欧元符号
+                                    if net_value_raw and re.search(r'[\d,]+\.?\d*', net_value_raw):
+                                        # 提取数字并添加欧元符号
+                                        number_match = re.search(r'[\d,]+\.?\d*', net_value_raw.replace(',', ''))
+                                        if number_match:
+                                            net_value = f"€{number_match.group(0)}"
+                                        else:
+                                            net_value = net_value_raw
+                                    else:
+                                        net_value = net_value_raw
+
                         print(f"Processing row: Item={item}, ID={id_part}, Qty={quantity}, Net Price={net_price}, Net Value={net_value}")
                         
                         # 验证ID格式（ID可以为空，但如果存在就必须符合格式）
                         id_valid = (not id_part) or re.match(r'^\d{4}-\d{4}-\d{4}$', id_part)
                         
+                        # 检查是否为特殊行：只有Description和Value，没有Item、Quantity、Net Price
+                        # 这种情况下：pn为空，Quantity设为1，net_price和total_price都为该value
+                        is_special_case = (not item and description and net_value and not quantity and not net_price) or (table_structure == 'simple' and item and description and net_value)
+                        
                         # 只要有有效的Item编号和ID格式正确，就添加数据（允许ID为空）
-                        if item and id_valid:
-                            print(f"添加有效数据行: Item={item}, ID={id_part if id_part else 'N/A'}")
-                            # 去掉前导零
-                            item_no_zero = remove_leading_zeros(item) if item else ""
+                        # 或者是特殊情况：只有Description和Value
+                        if (item and id_valid) or is_special_case:
+                            if is_special_case:
+                                print(f"添加特殊数据行（仅Description和Value）: Description={description}, Value={net_value}")
+                                # 特殊情况：item可能为空或不为空
+                                if not item:
+                                    item = ""
+                                    item_no_zero = ""
+                                else:
+                                    item_no_zero = remove_leading_zeros(item) if item else ""
+                                id_part = ""  # pn为空
+                                quantity = "1"  # 数量设为1
+                                net_price = net_value  # net_price和total_price都为value
+                            else:
+                                print(f"添加有效数据行: Item={item}, ID={id_part if id_part else 'N/A'}")
+                                # 去掉前导零
+                                item_no_zero = remove_leading_zeros(item) if item else ""
                             
                             # 创建数据行信息
                             data_row_info = {
@@ -313,6 +409,7 @@ def extract_wefaricate_data(pdf_path):
                                 "quantity": quantity,
                                 "net_price": net_price,
                                 "net_value": net_value,
+                                "table_idx": table_idx,  # 此次会话指的是哪个表格
                                 "table_row_index": i,  # 数据行在表格中的索引
                                 "table_row_data": row
                             }
@@ -348,12 +445,14 @@ def extract_wefaricate_data(pdf_path):
         # 收集所有数据行和Schedule Lines信息
         for page_info in all_pages_info:
             # 为每个数据行添加页面信息
-            for data_row in page_info['data_rows']:
+            for table_idx, data_row in enumerate(page_info['data_rows']):
                 data_row_with_page = data_row.copy()
                 data_row_with_page['page_num'] = page_info['page_num']
                 data_row_with_page['po_number'] = page_info['po_number']
                 data_row_with_page['po_placed_date'] = page_info['po_placed_date']
                 data_row_with_page['purchaser'] = page_info['purchaser']
+                # 注意：这里的table_idx是数据行在page_info['data_rows']中的索引，不是表格本身的索引
+                # 我们需要从原始数据中追踪来自哪个表格
                 all_data_rows.append(data_row_with_page)
             
             # 为每个Schedule Lines添加页面信息
@@ -373,6 +472,7 @@ def extract_wefaricate_data(pdf_path):
             all_elements.append({
                 'type': 'data',
                 'page_num': data_row['page_num'],
+                'table_idx': data_row.get('table_idx'),  # 添加表格索引
                 'table_row_index': data_row['table_row_index'],
                 'data': data_row
             })
@@ -382,14 +482,15 @@ def extract_wefaricate_data(pdf_path):
             all_elements.append({
                 'type': 'schedule',
                 'page_num': schedule_line['page_num'],
+                'table_idx': schedule_line.get('table_idx'),  # 添加表格索引
                 'table_row_index': schedule_line['table_row_index'],
                 'data': schedule_line
             })
         
-        # 按页面和行索引排序
-        all_elements.sort(key=lambda x: (x['page_num'], x['table_row_index']))
+        # 按页面、表格和行索引排序
+        all_elements.sort(key=lambda x: (x['page_num'], x.get('table_idx', 0), x['table_row_index']))
         
-        # 为每个数据行找到其后面的最近一个Schedule Lines
+        # 为每个数据行找到其后面的所有Schedule Lines，并选择最早的日期
         for i, element in enumerate(all_elements):
             if element['type'] == 'data':
                 # 处理数据行
@@ -405,13 +506,36 @@ def extract_wefaricate_data(pdf_path):
                 net_price = data_row['net_price']
                 net_value = data_row['net_value']
                 
-                # 查找这个数据行后面的最近一个Schedule Lines
+                # 查找这个数据行后面的所有Schedule Lines（可能跨页），选择最早的日期
                 req_date_wf = None
+                schedule_dates = []
                 for j in range(i + 1, len(all_elements)):
                     next_element = all_elements[j]
-                    if next_element['type'] == 'schedule':
-                        req_date_wf = next_element['data']['req_date']
-                        break
+                    
+                    # 检查是否是同一表格（同页同表格）中的Schedule Lines
+                    if next_element['page_num'] == element['page_num'] and next_element.get('table_idx') == element.get('table_idx'):
+                        # 同一表格中的元素
+                        if next_element['type'] == 'schedule':
+                            schedule_dates.append(next_element['data']['req_date'])
+                        elif next_element['type'] == 'data':
+                            # 遇到下一个数据行时停止（如果在同一表格中）
+                            break
+                    elif next_element['page_num'] > element['page_num']:
+                        # 已经转到下一页
+                        # 如果下一页也有Schedule Lines，继续收集（跨页关联）
+                        if next_element['type'] == 'schedule':
+                            schedule_dates.append(next_element['data']['req_date'])
+                        elif next_element['type'] == 'data':
+                            # 遇到下一个数据行时停止
+                            break
+                    # 如果是上一页的数据，忽略
+                
+                # 从所有Schedule Lines中选择最早的日期
+                if schedule_dates:
+                    req_date_wf = min(schedule_dates)
+                    print(f"数据行 {item} 有 {len(schedule_dates)} 条schedule lines，选择最早日期: {req_date_wf}")
+                else:
+                    print(f"数据行 {item} 没有找到schedule lines")
                 
                 print(f"数据行 {item} 关联到日期: {req_date_wf}")
                 
@@ -879,26 +1003,38 @@ def extract_centurion_data(pdf_path):
                             description = " ".join(description_parts)
                             
                             # 对于其他项目，检查下一行是否包含PN的剩余部分和描述
-                            if i + 1 < len(all_lines):
-                                next_line = all_lines[i + 1].strip()
-                                # 检查下一行是否可能是当前项目的延续
-                                # 即使下一行以数字开头，但如果它看起来像描述的延续（没有完整的项目格式），也应该处理
+                            # 改为使用一个循环来处理所有延续行
+                            j = i + 1
+                            while j < len(all_lines):
+                                next_line = all_lines[j].strip()
+                                if not next_line or 'Total' in next_line or 'Subtotal' in next_line or 'Charges' in next_line or 'Freight' in next_line:
+                                    # 遇到空行或不是描述的行，停止
+                                    break
+                                
                                 next_line_parts = next_line.split()
-                                if next_line_parts:
-                                    # 检查PN是否以"-"结尾且下一行的第一个部分是3位数字
-                                    if pn_part.endswith("-") and re.match(r'^\d{3}', next_line_parts[0]):
-                                        # 合并PN
-                                        pn = f"{pn_part}{next_line_parts[0]}"
-                                        # 将剩余部分添加到描述中
-                                        if len(next_line_parts) > 1:
-                                            description = description + " " + " ".join(next_line_parts[1:])
-                                        i += 1  # 跳过下一行，因为我们已经处理了它
-                                    # 检查是否是描述的延续（不是新的项目行）
-                                    elif not re.match(r'^\d+\s', next_line) or (len(next_line_parts) > 0 and not re.match(r'^\d+\s\S+', next_line)):
-                                        # 将下一行的内容添加到描述中
-                                        description = description + " " + next_line
-                                        i += 1  # 跳过下一行
-                        
+                                if not next_line_parts:
+                                    break
+                                
+                                # 检查PN是否以"-"结尾且下一行的第一个部分是3位数字（只在第一个下一行检查）
+                                if j == i + 1 and pn_part.endswith("-") and re.match(r'^\d{3}', next_line_parts[0]):
+                                    # 合并PN
+                                    pn = f"{pn_part}{next_line_parts[0]}"
+                                    # 将剩余部分添加到描述中
+                                    if len(next_line_parts) > 1:
+                                        description = description + " " + " ".join(next_line_parts[1:])
+                                    j += 1  # 移动到下一行
+                                # 检查是否是描述的延续（不是PN的续篇，也不是新的完整项目行）
+                                elif not any(re.match(r'\d{1,2}[/-]\d{1,2}[/-]\d{2,4}', part) for part in next_line_parts):
+                                    # 下一行不包含日期，所以不是新项目，当作描述的延续处理
+                                    description = description + " " + next_line
+                                    j += 1  # 移动到下一行
+                                else:
+                                    # 下一行包含日期或其他，退出循环
+                                    break
+                            
+                            # 更新i以跳过所有处理过的描述延续行
+                            i = j - 1  # 最后一个处理行的上一行（因为下方的主流程i += 1）
+
                         print(f"Processing row: Line={line_number}, PN={pn}, Qty={quantity}")
                         
                         # 创建数据行
@@ -953,7 +1089,7 @@ def parse_magic_fx_line(block_text, line_number, po_number, po_placed_date):
             # 尝试从余下的文本中提取数字
             rest_text = block_text[match2.end():].strip()
             # 找整数或带小数的数字
-            numbers = re.findall(r'[\d.,]+', rest_text)
+            numbers = re.findall(r'[\d.,\s]+', rest_text)
             if len(numbers) >= 3:
                 qty_str = numbers[0]
                 net_price_str = numbers[1]

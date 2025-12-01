@@ -101,7 +101,7 @@
                     <span style="padding: 12px 10px; background-color: #f8f9fa; border: 1px solid #ddd; border-left: none; border-radius: 0 4px 4px 0;">@wefabricate.com</span>
                 </div>
             </div>
-            <button type="submit">注册</button>
+            <button type="submit" id="submitBtn">注册</button>
         </form>
         <div class="login-link">
             <a href="/">返回登录</a>
@@ -115,6 +115,7 @@
             const emailUsername = document.getElementById('email').value;
             const email = emailUsername + '@wefabricate.com';
             const messageDiv = document.getElementById('message');
+            const submitBtn = document.getElementById('submitBtn');
             
             // 隐藏之前的消息
             messageDiv.classList.add('hidden');
@@ -124,6 +125,10 @@
                 showMessage('请输入邮箱用户名', 'error');
                 return;
             }
+            
+            // 禁用提交按钮防止重复提交
+            submitBtn.disabled = true;
+            submitBtn.textContent = '注册中...';
             
             // 发送注册请求
             fetch('/api/user/register', {
@@ -139,15 +144,24 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showMessage(data.message, 'success');
-                    // 清空表单
-                    document.getElementById('registerForm').reset();
+                    showMessage('注册成功，正在跳转到密码设置...', 'success');
+                    // 2秒后跳转到设置密码页面，使用用户ID
+                    setTimeout(() => {
+                        // 跳转到设置密码页面，传递用户ID和邮箱信息
+                        window.location.href = '/set_password.html?userId=' + encodeURIComponent(data.user_id) + '&email=' + encodeURIComponent(email);
+                    }, 2000);
                 } else {
                     showMessage(data.error, 'error');
+                    // 重新启用提交按钮
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = '注册';
                 }
             })
             .catch(error => {
                 showMessage('注册时发生错误: ' + error.message, 'error');
+                // 重新启用提交按钮
+                submitBtn.disabled = false;
+                submitBtn.textContent = '注册';
             });
         });
         

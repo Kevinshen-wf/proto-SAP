@@ -133,29 +133,140 @@ class PDFImportProcessor:
             return []
     
     def insert_data_with_check(self, table_name, data_list, user_email=None):
-        """插入数据，如果有重复则覆盖，并记录操作日志"""
+        """批量插入数据，如果有重复则覆盖，并记录操作日志"""
         try:
-            success_count = 0
+            if not data_list:
+                return {
+                    "success": True,
+                    "count": 0
+                }
             
             # 如果没有提供用户邮箱，使用默认值
             if user_email is None:
                 user_email = "pdf_importer@example.com"
             
-            # 逐条插入数据并记录操作日志
-            for data in data_list:
-                # 使用数据库管理器的插入方法，它会处理重复数据的情况
-                from backend.models.database import insert_table_data
-                success, message = insert_table_data(table_name, data, user_email)
-                if success:
-                    success_count += 1
-                else:
-                    print(f"插入数据时出错: {message}")
+            # 导入数据库相关模块
+            from backend.models.database import get_db_manager
+            from psycopg2 import sql
             
-            return {
-                "success": True,
-                "count": success_count
-            }
+            db_manager = get_db_manager()
+            conn = db_manager.get_connection()
+            
+            if not conn:
+                return {
+                    "success": False,
+                    "error": "数据库连接失败"
+                }
+            
+            success_count = 0
+            error_list = []
+            
+            try:
+                cursor = conn.cursor()
+                
+                # 获取表的实际列名（用于验证）
+                get_columns_query = """
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_schema = 'purchase_orders' 
+                    AND table_name = %s
+                """
+                cursor.execute(get_columns_query, (table_name,))
+                existing_columns = set(row[0] for row in cursor.fetchall())
+                
+                # 批量插入数据
+                for idx, data in enumerate(data_list):
+                    try:
+                        # 清理数据中的特殊值，只保留表中存在的列
+                        cleaned_data = {}
+                        for k, v in data.items():
+                            if k not in existing_columns:
+                                # 跳过不存在的列
+                                continue
+                            if v == 'None' or v == 'nan' or v == '':
+                                cleaned_data[k] = None
+                            else:
+                                cleaned_data[k] = v
+                        
+                        if not cleaned_data:
+                            error_list.append(f"行{idx+1}: 没有有效数据")
+                            continue
+                        
+                        # 根据表名确定主键字段和处理策略
+                        if table_name in ['wf_open', 'non_wf_open']:
+                            # WF Open和Non-WF Open表使用po_line作为主键
+                            columns = list(cleaned_data.keys())
+                            values = list(cleaned_data.values())
+                            
+                            # 构建ON CONFLICT更新的SET子句
+                            update_fields = []
+                            for col in columns:
+                                if col != 'po_line':  # 主键字段不更新
+                                    update_fields.append(f"{col} = EXCLUDED.{col}")
+                            
+                            insert_query = sql.SQL("""
+                                INSERT INTO purchase_orders.{} ({}) 
+                                VALUES ({}) 
+                                ON CONFLICT (po_line) DO UPDATE SET {}
+                            """).format(
+                                sql.Identifier(table_name),
+                                sql.SQL(", ").join(sql.Identifier(col) for col in columns),
+                                sql.SQL(", ").join(sql.Placeholder() * len(columns)),
+                                sql.SQL(", ".join(update_fields) if update_fields else "po = EXCLUDED.po")
+                            )
+                        else:
+                            # 其他表使用默认的插入方式
+                            columns = list(cleaned_data.keys())
+                            values = list(cleaned_data.values())
+                            placeholders = sql.SQL(", ").join(sql.Placeholder() * len(columns))
+                            
+                            insert_query = sql.SQL("INSERT INTO purchase_orders.{} ({}) VALUES ({})").format(
+                                sql.Identifier(table_name),
+                                sql.SQL(", ").join(sql.Identifier(col) for col in columns),
+                                placeholders
+                            )
+                        
+                        cursor.execute(insert_query, values)
+                        success_count += 1
+                        
+                    except Exception as item_error:
+                        error_list.append(f"行{idx+1}: {str(item_error)}")
+                        print(f"插入第{idx+1}条数据时出错: {item_error}")
+                        print(f"数据内容: {data}")
+                
+                # 一次性提交所有更改
+                conn.commit()
+                cursor.close()
+                
+                # 记录操作日志
+                if success_count > 0 and user_email:
+                    from backend.operation_logger import operation_logger
+                    operation_logger.log_operation(
+                        user_email=user_email,
+                        table_name=table_name,
+                        operation='batch_insert',
+                        record_data={"batch_count": success_count}
+                    )
+                
+                return {
+                    "success": True,
+                    "count": success_count,
+                    "errors": error_list if error_list else None
+                }
+                
+            except Exception as batch_error:
+                conn.rollback()
+                cursor.close()
+                return {
+                    "success": False,
+                    "error": f"批量插入失败: {str(batch_error)}",
+                    "count": success_count
+                }
+            finally:
+                conn.close()
+                
         except Exception as e:
+            print(f"批量插入数据时出错: {e}")
             return {
                 "success": False,
                 "error": str(e)

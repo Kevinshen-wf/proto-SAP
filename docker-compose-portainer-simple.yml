@@ -1,0 +1,80 @@
+# Portainer 简洁版本 Stack 配置
+# 用于在 Portainer 中直接部署 proto-SAP 项目
+# 使用预构建镜像，无需本地构建
+
+services:
+  # PostgreSQL 数据库服务
+  postgres:
+    image: postgres:15-alpine
+    container_name: proto-sap-db
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-pgsql}
+      POSTGRES_DB: ${DB_NAME:-purchase_orders}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d purchase_orders || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    networks:
+      - proto-sap-network
+    restart: unless-stopped
+    labels:
+      com.example.description: "PostgreSQL数据库"
+
+  # Flask 后端服务
+  backend:
+    image: proto-sap:latest
+    container_name: proto-sap-backend
+    command: sh -c "until nc -z postgres 5432 2>/dev/null || pg_isready -h postgres -p 5432 2>/dev/null; do echo '等待数据库...'; sleep 2; done; echo '数据库就绪'; python init_db.py && python -m flask --app backend.web_app run --host=0.0.0.0 --port=5000"
+    environment:
+      DB_HOST: postgres
+      DB_NAME: ${DB_NAME:-purchase_orders}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-pgsql}
+      DB_PORT: 5432
+      APP_HOST: 0.0.0.0
+      APP_PORT: 5000
+      APP_DEBUG: ${APP_DEBUG:-False}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-wefabricate_secret_key_2025}
+      SMTP_SERVER: ${SMTP_SERVER:-smtp.qq.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SENDER_EMAIL: ${SENDER_EMAIL:-shenkaiwen61@qq.com}
+      SENDER_PASSWORD: ${SENDER_PASSWORD:-hjgbqrldkztebfbg}
+      APP_BASE_URL: ${APP_BASE_URL:-http://192.168.81.74:5000}
+      EMAIL_ENABLED: ${EMAIL_ENABLED:-true}
+    ports:
+      - "5000:5000"
+    volumes:
+      - uploads_data:/app/uploads
+      - pdf_samples_data:/app/pdf_samples
+    depends_on:
+      - postgres
+    networks:
+      - proto-sap-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5000/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    labels:
+      com.example.description: "Flask后端应用"
+
+volumes:
+  postgres_data:
+    driver: local
+  uploads_data:
+    driver: local
+  pdf_samples_data:
+    driver: local
+
+networks:
+  proto-sap-network:
+    driver: bridge
