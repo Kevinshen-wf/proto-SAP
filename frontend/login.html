@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>用户登录 - Wefabricate系统</title>
+    <title>User Login - Wefabricate System</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -91,21 +91,21 @@
 </head>
 <body>
     <div class="container">
-        <h2>用户登录</h2>
+        <h2>User Login</h2>
         <div id="message" class="message hidden"></div>
         <form id="loginForm">
             <div class="form-group">
-                <label for="email">邮箱:</label>
-                <input type="email" id="email" required placeholder="请输入@wefabricate.com邮箱">
+                <label for="email">Email:</label>
+                <input type="email" id="email" required placeholder="Enter your @wefabricate.com email">
             </div>
             <div class="form-group">
-                <label for="password">密码:</label>
-                <input type="password" id="password" required placeholder="请输入密码">
+                <label for="password">Password:</label>
+                <input type="password" id="password" required placeholder="Enter your password">
             </div>
-            <button type="submit">登录</button>
+            <button type="submit">Login</button>
         </form>
         <div class="register-link">
-            <a href="register.html">没有账户？立即注册</a>
+            <a href="register.html">No account? Register now</a>
         </div>
     </div>
 
@@ -134,7 +134,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showMessage('登录成功！', 'success');
+                    showMessage('Login successful!', 'success');
                     // 保存token到localStorage
                     localStorage.setItem('authToken', data.token);
                     localStorage.setItem('currentUser', JSON.stringify(data.user));
@@ -147,7 +147,7 @@
                 }
             })
             .catch(error => {
-                showMessage('登录时发生错误: ' + error.message, 'error');
+                showMessage('Login error: ' + error.message, 'error');
             });
         });
         

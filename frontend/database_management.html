@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>数据库管理</title>
+    <title>Database Management</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         * {
@@ -651,27 +651,114 @@
             border-color: #4299e1;
             color: white;
         }
+        
+        /* 复选框样式 */
+        .checkbox-cell {
+            text-align: center;
+            width: 50px;
+        }
+        
+        /* 操作列样式 */
+        .action-cell {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        
+        td:first-child {
+            width: 100px;
+            min-width: 100px;
+        }
+        
+        .shipment-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #f56565;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 2px 6px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 3px;
+            transition: all 0.2s ease;
+        }
+        
+        .delete-btn:hover {
+            background: #fed7d7;
+            color: #e53e3e;
+        }
+        
+        /* 全局发货按钮区域 */
+        .shipment-button-area {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .selected-items-tabs {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .selected-tab {
+            background: #e6f2ff;
+            border: 1px solid #4299e1;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .selected-tab .remove-btn {
+            background: none;
+            border: none;
+            color: #f56565;
+            cursor: pointer;
+            font-weight: bold;
+            padding: 0 3px;
+        }
+        
+        .selected-tab .remove-btn:hover {
+            color: #e53e3e;
+        }
     </style>
 </head>
 <body>
     <div class="container-fluid">
         <div class="header">
-            <h1>采购订单管理系统</h1>
+            <h1>Purchase Order Management System</h1>
             <div class="user-info">
-                <span id="currentUser">未登录</span>
-                <a href="/register.html" id="registerLink">注册</a>
-                <a href="/login.html" id="loginLink" style="display: inline-block;">登录</a>
-                <button id="logoutBtn" style="display: none;">退出</button>
+                <span id="currentUser">Not Logged In</span>
+                <a href="/register.html" id="registerLink">Register</a>
+                <a href="/login.html" id="loginLink" style="display: inline-block;">Login</a>
+                <button id="logoutBtn" style="display: none;">Logout</button>
             </div>
         </div>
         
         <!-- 导航按钮 -->
         <div class="mb-3">
             <a href="/" class="btn btn-primary">
-                📊 数据库管理
+                📊 Database Management
             </a>
             <a href="/pdf_import.html" class="btn btn-secondary">
-                📤 PDF导入
+                📤 PDF Import
             </a>
         </div>
         
@@ -690,21 +777,31 @@
             </div>
             <div class="col-md-8 d-flex align-items-end">
                 <button class="btn btn-primary me-2" onclick="loadTableData()">
-                    🔄 刷新数据
+                    🔄 Refresh Data
                 </button>
                 <button class="btn btn-success" onclick="showInsertForm()">
-                    ➕ 插入新记录
+                    ➕ Insert New Record
                 </button>
+            </div>
+        </div>
+        
+        <!-- 全局发货按钮区域 (仅在Open表显示) -->
+        <div id="shipmentButtonArea" class="shipment-button-area" style="display: none;">
+            <button class="btn btn-warning me-2" onclick="openGlobalShipmentModal()" id="globalShipmentBtn">
+                📦 Shipment
+            </button>
+            <div class="selected-items-tabs" id="selectedItemsDisplay">
+                <!-- 已选项目将显示在这里 -->
             </div>
         </div>
         
         <!-- 插入表单 (默认隐藏) -->
         <div id="insertFormContainer" class="table-container" style="display: none;">
-            <h5>插入新记录</h5>
+            <h5>Insert New Record</h5>
             <div id="insertFormFields" class="row g-2"></div>
             <div class="mt-2">
-                <button class="btn btn-success me-2" onclick="insertRecord()">插入记录</button>
-                <button class="btn btn-secondary" onclick="hideInsertForm()">取消</button>
+                <button class="btn btn-success me-2" onclick="insertRecord()">Insert</button>
+                <button class="btn btn-secondary" onclick="hideInsertForm()">Cancel</button>
             </div>
         </div>
         
@@ -712,7 +809,7 @@
         
         <!-- 数据表格 -->
         <div class="table-container">
-            <h5 id="tableTitle">WF Open 表数据</h5>
+            <h5 id="tableTitle">WF Open Table Data</h5>
             <div id="filterRow" class="filter-row"></div>
             <div class="table-responsive">
                 <table class="table table-bordered table-striped">
@@ -734,51 +831,71 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">确认操作</h5>
+                    <h5 class="modal-title">Confirm Operation</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body" id="confirmModalBody">
-                    确认要执行此操作吗？
+                                        Are you sure you want to perform this operation?
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" id="confirmModalButton">确认</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmModalButton">Confirm</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 发货模态框 -->
-    <div class="modal fade" id="shipmentModal" tabindex="-1">
-        <div class="modal-dialog">
+    <!-- 全局发货模态框 -->
+    <div class="modal fade" id="globalShipmentModal" tabindex="-1" style="overflow-y: auto;">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">发货信息</h5>
+                    <h5 class="modal-title">Shipment</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="shipmentPO" class="form-label">PO号</label>
-                        <input type="text" class="form-control" id="shipmentPO" readonly>
+                <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                    <!-- 全局信息输入 -->
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h6 class="mb-0">Shipment Information</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Tracking Number <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="globalTrackingNo" placeholder="Enter tracking number">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Shipping Mode <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="globalShippingMode">
+                                        <option value="">Please select...</option>
+                                        <option value="sea">Sea</option>
+                                        <option value="air">Air</option>
+                                        <option value="train">Train</option>
+                                        <option value="truck">Truck</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Shipping Cost <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="globalShippingCost" placeholder="Enter shipping cost" step="0.01">
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="shipmentPN" class="form-label">PN号</label>
-                        <input type="text" class="form-control" id="shipmentPN" readonly>
-                    </div>
-                    <input type="hidden" id="shipmentPoLine">
-                    <div class="mb-3">
-                        <label for="shipmentMaxQty" class="form-label">最大可发货数量</label>
-                        <input type="text" class="form-control" id="shipmentMaxQty" readonly>
-                    </div>
-                    <div class="mb-3">
-                        <label for="shipmentQty" class="form-label">发货数量 <span class="text-danger">*</span></label>
-                        <input type="number" class="form-control" id="shipmentQty" placeholder="输入发货数量" min="0.01" step="0.01">
-                        <small class="text-muted">输入的数量不能超过 <span id="maxQtyDisplay">0</span></small>
+                    
+                    <!-- 物料发货信息 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">Material Shipment Quantity</h6>
+                        </div>
+                        <div class="card-body" id="shipmentItemsContainer" style="max-height: 400px; overflow-y: auto;">
+                            <!-- 物料项将动态生成 -->
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" id="confirmShipmentBtn">确认发货</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmGlobalShipmentBtn">Confirm Shipment</button>
                 </div>
             </div>
         </div>
@@ -801,7 +918,7 @@
         if (!checkLoginStatus()) {
             // 如果未登录，阻止页面继续加载
             document.addEventListener('DOMContentLoaded', function() {
-                document.body.innerHTML = '<div style="text-align: center; padding: 50px;"><h2>请先登录</h2><p>正在跳转到登录页面...</p></div>';
+                document.body.innerHTML = '<div style="text-align: center; padding: 50px;"><h2>Please log in first</h2><p>Redirecting to login page...</p></div>';
             });
         }
         
@@ -829,6 +946,9 @@
         // 分页相关变量
         let currentPage = 1;
         let itemsPerPage = 20;
+        
+        // 全局发货相关变量
+        let selectedItemsForShipment = new Map(); // 存储已选择的项目: key=po_line, value=物料信息
         
         // 初始化页面
         document.addEventListener('DOMContentLoaded', function() {
@@ -1024,7 +1144,7 @@
                 'po': '采购订单号',
                 'pn': '零件号',
                 'line': '行号',
-                'po_line': 'PO/行号',
+                'po_line': 'PO/Line',
                 'description': '描述',
                 'qty': '数量',
                 'net_price': '净价',
@@ -1054,7 +1174,10 @@
         
         // 加载表数据
         function loadTableData() {
-            showStatus('正在加载数据...', 'loading');
+            showStatus('Loading data...', 'loading');
+            
+            // 清除选择的发货项目
+            selectedItemsForShipment.clear();
             
             authenticatedFetch(`/api/tables/${currentTable}`)
                 .then(response => response.json())
@@ -1074,11 +1197,11 @@
                         }, 0);
                         hideStatus();
                     } else {
-                        showStatus(`加载数据失败: ${data.error}`, 'error');
+                        showStatus(`Data loading failed: ${data.error}`, 'error');
                     }
                 })
                 .catch(error => {
-                    showStatus(`加载数据失败: ${error}`, 'error');
+                    showStatus(`Data loading failed: ${error}`, 'error');
                 });
         }
         
@@ -1132,23 +1255,19 @@
                 const rowQty = parseFloat(row.qty) || 0;
                 const isOpenTable = (currentTable === 'wf_open' || currentTable === 'non_wf_open');
                 
-                rowHtml += `<td style="text-align: center;">`;
+                rowHtml += `<td style="text-align: center;" class="action-cell">`;
                 
-                // 发货按钮（仅在Open表显示）
+                // 复选框 (仅在Open表显示)
                 if (isOpenTable) {
-                    rowHtml += `<button class="btn btn-sm btn-primary me-1" onclick="showShipmentDialog('${po}', '${pn}', '${poLine}', ${rowQty})" title="发货">
-                       📋
-                    </button>`;
+                    const isChecked = selectedItemsForShipment.has(poLine) ? 'checked' : '';
+                    rowHtml += `<input type="checkbox" class="shipment-checkbox" data-po-line="${poLine}" data-po="${po}" data-pn="${pn}" data-qty="${rowQty}" data-row-index="${rowIndex}" ${isChecked} onchange="handleShipmentCheckboxChange()">`;
                 }
                 
                 // 删除按钮 - 根据表类型传递不同的主键
                 const deleteKey = isOpenTable ? poLine : id;
                 const deleteKeyDisplay = isOpenTable ? poLine : id;
-                rowHtml += `<button class="btn btn-sm btn-danger" onclick="deleteRowRecord('${deleteKey}', '${currentTable}')" title="删除此记录">
-                        🗑️
-                    </button>
+                rowHtml += `<button class="delete-btn" onclick="deleteRowRecord('${deleteKey}', '${currentTable}')" title="删除此记录">✕</button>
                 </td>`;
-                
                 // 再添加数据列
                 columnNames.forEach(col => {
                     const value = row[col] !== null ? row[col] : '';
@@ -1178,8 +1297,25 @@
                         const company = row['company'] || '';
                         const currency = getCurrencySymbol(company);
                         if (currency && !isNaN(parseFloat(displayValue))) {
-                            // 显示真实小数位数，不进行四舍五入
-                            displayValue = currency + parseFloat(displayValue);
+                            // 为shipping_cost字段，检查是否为共享运费
+                            if (col === 'shipping_cost') {
+                                const currentShippingCost = parseFloat(displayValue);
+                                // 统计是否有不同的po_line有相同的shipping_cost
+                                const sameShippingCostCount = paginatedData.filter(r => {
+                                    const rShippingCost = parseFloat(r.shipping_cost || 0);
+                                    return rShippingCost === currentShippingCost && r.shipping_cost !== null && r.shipping_cost !== '';
+                                }).length;
+                                
+                                // 如果有多条记录共享运费，则添加shared:前缀
+                                if (sameShippingCostCount > 1) {
+                                    displayValue = 'shared:' + currency + currentShippingCost;
+                                } else {
+                                    displayValue = currency + currentShippingCost;
+                                }
+                            } else {
+                                // 显示真实小数位数，不进行四舍五入
+                                displayValue = currency + parseFloat(displayValue);
+                            }
                         }
                     }
                     
@@ -1243,6 +1379,9 @@
                     }
                 }
             });
+            
+            // 更新发货按钮区域显示
+            updateShipmentButtonArea();
         }
         
         // 渲染表头
@@ -1251,7 +1390,7 @@
             header.innerHTML = '';
             
             let headerHtml = '<tr>';
-            headerHtml += '<th>操作</th>';
+            headerHtml += '<th>Actions</th>';
             columnNames.forEach(col => {
                 headerHtml += `<th>${col}</th>`;
             });
@@ -1275,7 +1414,7 @@
             filterHtml += `
                 <div>
                     <button class="btn btn-sm btn-outline-secondary clear-filter-btn" onclick="clearAllFilters()">
-                       ❌ 清除
+                       ❌ Clear
                     </button>
                 </div>
             `;
@@ -1295,9 +1434,9 @@
                                     data-column="${col}"
                                     style="flex: 0 0 auto; width: 100px;" 
                                     onchange="filterTable(this)">
-                                <option value="equals">当天</option>
-                                <option value="before">之前</option>
-                                <option value="on_or_after">之后</option>
+                                <option value="equals">On</option>
+                                <option value="before">Before</option>
+                                <option value="on_or_after">After</option>
                             </select>
                             <input type="hidden" class="date-filter" data-column="${col}">
                         </div>
@@ -1336,11 +1475,11 @@
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title">选择日期 - ${column}</h5>
+                            <h5 class="modal-title">Select Date - ${column}</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
                         <div class="modal-body">
-                            <label class="form-label">选择日期：</label>
+                            <label class="form-label">Select Date:</label>
                             <input type="date" id="dateFilterInput_${column}" class="form-control" value="${currentDate || ''}">
                         </div>
                         <div class="modal-footer">
@@ -1484,6 +1623,8 @@
             renderTableBody();
             updateRecordCount();
             renderPagination();
+            // 保持已选项目的UI状态
+            setTimeout(updateSelectedItemsDisplay, 100);
         }
         
         // 删除这个重复的定义，使用下面的版本
@@ -1806,7 +1947,7 @@
                         // 检查值是否有变化
                         if (originalValue !== currentInputValue) {
                             // 弹出确认对话框
-                            showConfirmModal(`数据已修改，是否保存更改？<br><strong>原值:</strong> ${originalValue || '(空)'}<br><strong>新值:</strong> ${currentInputValue || '(空)'}`, function() {
+                            showConfirmModal(`Data has been modified. Save changes?<br><strong>Original:</strong> ${originalValue || '(empty)'}<br><strong>New:</strong> ${currentInputValue || '(empty)'}`, function() {
                                 // 确认保存
                                 cell.textContent = currentInputValue || '';
                                 cell.classList.remove('editing-cell');
@@ -1838,7 +1979,7 @@
                         // 检查值是否有变化
                         if (originalValue !== currentInputValue) {
                             // 弹出确认对话框
-                            showConfirmModal(`数据已修改，是否保存更改？<br><strong>原值:</strong> ${originalValue || '(空)'}<br><strong>新值:</strong> ${currentInputValue || '(空)'}`, function() {
+                            showConfirmModal(`Data has been modified. Save changes?<br><strong>Original:</strong> ${originalValue || '(empty)'}<br><strong>New:</strong> ${currentInputValue || '(empty)'}`, function() {
                                 // 确认保存
                                 cell.textContent = currentInputValue || '';
                                 cell.classList.remove('editing-cell');
@@ -1864,7 +2005,7 @@
                         const currentInputValue = input.value;
                         
                         if (originalValue !== currentInputValue) {
-                            showConfirmModal(`数据已修改，是否保存更改？<br><strong>原值:</strong> ${originalValue || '(空)'}<br><strong>新值:</strong> ${currentInputValue || '(空)'}`, function() {
+                            showConfirmModal(`Data has been modified. Save changes?<br><strong>Original:</strong> ${originalValue || '(empty)'}<br><strong>New:</strong> ${currentInputValue || '(empty)'}`, function() {
                                 cell.textContent = currentInputValue || '';
                                 cell.classList.remove('editing-cell');
                                 cell.classList.add('editable-cell');
@@ -1890,7 +2031,7 @@
                             // 检查值是否有变化
                             if (originalValue !== currentInputValue) {
                                 // 弹出确认对话框
-                                showConfirmModal(`数据已修改，是否保存更改？<br><strong>原值:</strong> ${originalValue || '(空)'}<br><strong>新值:</strong> ${currentInputValue || '(空)'}`, function() {
+                                showConfirmModal(`Data has been modified. Save changes?<br><strong>Original:</strong> ${originalValue || '(empty)'}<br><strong>New:</strong> ${currentInputValue || '(empty)'}`, function() {
                                     // 确认保存
                                     cell.textContent = currentInputValue || '';
                                     cell.classList.remove('editing-cell');
@@ -1944,7 +2085,7 @@
             const pn = row.pn || row.PN;
             
             if (!pn) {
-                showStatus('无法保存：缺少主键值(pn)', 'error');
+                showStatus('Cannot save: missing primary key value(pn)', 'error');
                 return;
             }
             
@@ -1970,7 +2111,7 @@
                 if (data.success) {
                     // 更新原始数据
                     originalData[rowIndex] = JSON.parse(JSON.stringify(tableData[rowIndex]));
-                    showStatus(`数据已保存: ${columnName}`, 'success');
+                    showStatus(`Data saved: ${columnName}`, 'success');
                     setTimeout(hideStatus, 2000);
                     
                     // 重新验证该行数据（仅对数值列）
@@ -1978,13 +2119,13 @@
                         validateRow(rowIndex);
                     }
                 } else {
-                    showStatus(`保存失败: ${data.message}`, 'error');
+                    showStatus(`Save failed: ${data.message}`, 'error');
                     setTimeout(hideStatus, 3000);
                 }
             })
             .catch(error => {
                 console.error('保存数据时出错:', error);
-                showStatus(`保存失败: ${error.message}`, 'error');
+                showStatus(`Save failed: ${error.message}`, 'error');
                 setTimeout(hideStatus, 3000);
             });
         }
@@ -2021,7 +2162,7 @@
             const pn = row.pn || row.PN;
             
             if (!pn) {
-                showStatus('无法保存：缺少主键值(pn)', 'error');
+                showStatus('Cannot save: missing primary key value(pn)', 'error');
                 return;
             }
             
@@ -2047,7 +2188,7 @@
                 if (data.success) {
                     // 更新原始数据
                     originalData[rowIndex] = JSON.parse(JSON.stringify(tableData[rowIndex]));
-                    showStatus(`数据已保存: ${columnName}`, 'success');
+                    showStatus(`Data saved: ${columnName}`, 'success');
                     setTimeout(hideStatus, 2000);
                     
                     // 重新验证该行数据（仅对数值列）
@@ -2055,13 +2196,13 @@
                         validateRow(rowIndex);
                     }
                 } else {
-                    showStatus(`保存失败: ${data.message}`, 'error');
+                    showStatus(`Save failed: ${data.message}`, 'error');
                     setTimeout(hideStatus, 3000);
                 }
             })
             .catch(error => {
                 console.error('保存数据时出错:', error);
-                showStatus(`保存失败: ${error.message}`, 'error');
+                showStatus(`Save failed: ${error.message}`, 'error');
                 setTimeout(hideStatus, 3000);
             });
         }
@@ -2094,7 +2235,7 @@
                 if (data.success) {
                     // 更新原始数据
                     originalData[rowIndex] = JSON.parse(JSON.stringify(tableData[rowIndex]));
-                    showStatus(`数据已保存: ${columnName}`, 'success');
+                    showStatus(`Data saved: ${columnName}`, 'success');
                     setTimeout(hideStatus, 2000);
                     
                     // 重新验证该行数据（仅对数值列）
@@ -2102,13 +2243,13 @@
                         validateRow(rowIndex);
                     }
                 } else {
-                    showStatus(`保存失败: ${data.message}`, 'error');
+                    showStatus(`Save failed: ${data.message}`, 'error');
                     setTimeout(hideStatus, 3000);
                 }
             })
             .catch(error => {
                 console.error('保存数据时出错:', error);
-                showStatus(`保存失败: ${error.message}`, 'error');
+                showStatus(`Save failed: ${error.message}`, 'error');
                 setTimeout(hideStatus, 3000);
             });
         }
@@ -2156,18 +2297,18 @@
             }
             
             if (!hasChanges) {
-                showStatus('没有更改需要保存', 'info');
+                showStatus('No changes to save', 'info');
                 return;
             }
             
             // 获取主键值（假设为pn字段）
             const pn = row.pn || row.PN;
             if (!pn) {
-                showStatus('无法保存：缺少主键值(pn)', 'error');
+                showStatus('Cannot save: missing primary key value(pn)', 'error');
                 return;
             }
             
-            showStatus('正在保存数据...', 'loading');
+            showStatus('Saving data...', 'loading');
             
             authenticatedFetch(`/api/tables/${currentTable}/${pn}`, {
                 method: 'PUT',
@@ -2179,15 +2320,15 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showStatus('数据保存成功', 'success');
+                    showStatus('Data saved successfully', 'success');
                     // 更新原始数据副本
                     originalData[rowIndex] = JSON.parse(JSON.stringify(row));
                 } else {
-                    showStatus(`保存失败: ${data.message}`, 'error');
+                    showStatus(`Save failed: ${data.message}`, 'error');
                 }
             })
             .catch(error => {
-                showStatus(`保存失败: ${error}`, 'error');
+                showStatus(`Save failed: ${error}`, 'error');
             });
         }
         
@@ -2220,19 +2361,19 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        showStatus('记录插入成功', 'success');
+                        showStatus('Record inserted successfully', 'success');
                         hideInsertForm();
                         loadTableData(); // 重新加载数据
                     } else {
-                        showStatus(`插入失败: ${data.message}`, 'error');
+                        showStatus(`Insert failed: ${data.message}`, 'error');
                     }
                 })
                 .catch(error => {
-                    showStatus(`插入失败: ${error}`, 'error');
+                    showStatus(`Insert failed: ${error}`, 'error');
                 });
             } catch (error) {
                 console.error("insertRecord函数执行出错:", error);
-                showStatus(`插入记录时出错: ${error.message}`, 'error');
+                showStatus(`Error inserting record: ${error.message}`, 'error');
             }
         }
         
@@ -2324,105 +2465,277 @@
             }
         }
         
+
         
-        // 从行操作中删除记录
-        // 显示发货对话框
-        function showShipmentDialog(po, pn, poLine, maxQty) {
-            // 设置对话框信息
-            document.getElementById('shipmentPO').value = po || '';
-            document.getElementById('shipmentPN').value = pn || '';
-            document.getElementById('shipmentPoLine').value = poLine || '';
-            document.getElementById('shipmentMaxQty').value = maxQty || 0;
-            document.getElementById('shipmentQty').value = '';
-            document.getElementById('maxQtyDisplay').textContent = maxQty || 0;
+        // ============ 全局发货相关函数 ============
+        
+        // 更新发货按钮区域显示
+        function updateShipmentButtonArea() {
+            const isOpenTable = (currentTable === 'wf_open' || currentTable === 'non_wf_open');
+            const buttonArea = document.getElementById('shipmentButtonArea');
             
-            // 清除之前的input值
-            const qtyInput = document.getElementById('shipmentQty');
-            if (qtyInput) {
-                qtyInput.max = maxQty;
-                qtyInput.value = '';
-                qtyInput.focus();
+            if (isOpenTable) {
+                buttonArea.style.display = 'flex';
+                updateSelectedItemsDisplay();
+            } else {
+                buttonArea.style.display = 'none';
+            }
+        }
+        
+        // 更新已选项目显示
+        function updateSelectedItemsDisplay() {
+            const displayArea = document.getElementById('selectedItemsDisplay');
+            displayArea.innerHTML = '';
+            
+            if (selectedItemsForShipment.size === 0) {
+                displayArea.innerHTML = '<span style="color: #a0aec0; font-size: 0.9rem;">No materials selected</span>';
+            } else {
+                selectedItemsForShipment.forEach((item, poLine) => {
+                    const tabHtml = `<div class="selected-tab">
+                        <span>${poLine}</span>
+                        <button type="button" class="remove-btn" onclick="removeFromShipmentSelection('${poLine}')">×</button>
+                    </div>`;
+                    displayArea.innerHTML += tabHtml;
+                });
+            }
+        }
+        
+        // 处理发货备选框变化
+        function handleShipmentCheckboxChange() {
+            const checkboxes = document.querySelectorAll('.shipment-checkbox');
+            
+            checkboxes.forEach(checkbox => {
+                const poLine = checkbox.getAttribute('data-po-line');
+                const po = checkbox.getAttribute('data-po');
+                const pn = checkbox.getAttribute('data-pn');
+                const qty = parseFloat(checkbox.getAttribute('data-qty')) || 0;
+                const rowIndex = parseInt(checkbox.getAttribute('data-row-index'));
+                
+                if (checkbox.checked) {
+                    // 如果checkbox被checked，添加到Map
+                    if (!selectedItemsForShipment.has(poLine)) {
+                        // 从整个数据中找到原始记录
+                        const originalRow = tableData[rowIndex] || filteredData.find(r => r.po_line === poLine);
+                        
+                        selectedItemsForShipment.set(poLine, {
+                            po: po,
+                            pn: pn,
+                            po_line: poLine,
+                            qty: qty,
+                            description: originalRow ? (originalRow.description || '') : '',
+                            row_index: rowIndex,
+                            original_row: originalRow
+                        });
+                    }
+                } else {
+                    // 如果checkbox被unchecked，从Map中移除
+                    selectedItemsForShipment.delete(poLine);
+                }
+            });
+            
+            updateSelectedItemsDisplay();
+        }
+        
+        // 从选择中移除一项
+        function removeFromShipmentSelection(poLine) {
+            selectedItemsForShipment.delete(poLine);
+            
+            // 更新checkbox状态
+            const checkbox = document.querySelector(`.shipment-checkbox[data-po-line="${poLine}"]`);
+            if (checkbox) {
+                checkbox.checked = false;
             }
             
+            updateSelectedItemsDisplay();
+        }
+        
+        // 打开全局发货模态框
+        function openGlobalShipmentModal() {
+            if (selectedItemsForShipment.size === 0) {
+                showStatus('Please select materials to ship', 'warning');
+                return;
+            }
+            
+            // 清空模态框内容
+            document.getElementById('globalTrackingNo').value = '';
+            document.getElementById('globalShippingMode').value = '';
+            document.getElementById('globalShippingCost').value = '';
+            
+            // 生成物料发货项目
+            renderShipmentItems();
+            
             // 显示模态框
-            const modalElement = document.getElementById('shipmentModal');
+            const modalElement = document.getElementById('globalShipmentModal');
             const modal = new bootstrap.Modal(modalElement);
             modal.show();
         }
         
-        // 设置发货确认按钮事件
-        document.addEventListener('DOMContentLoaded', function() {
-            const confirmShipmentBtn = document.getElementById('confirmShipmentBtn');
-            if (confirmShipmentBtn) {
-                confirmShipmentBtn.addEventListener('click', confirmShipment);
-            }
-        });
-        
-        // 发货确认函数
-        function confirmShipment() {
-            const po = document.getElementById('shipmentPO').value;
-            const pn = document.getElementById('shipmentPN').value;
-            const poLine = document.getElementById('shipmentPoLine').value;
-            const maxQty = parseFloat(document.getElementById('shipmentMaxQty').value);
-            const shipmentQty = parseFloat(document.getElementById('shipmentQty').value);
+        // 渲染物料发货项目
+        function renderShipmentItems() {
+            const container = document.getElementById('shipmentItemsContainer');
+            container.innerHTML = '';
             
-            // 验证
-            if (!pn || !po) {
-                showStatus('PO号或PN号缺失', 'error');
-                return;
-            }
-            
-            if (!shipmentQty || shipmentQty <= 0) {
-                showStatus('请输入有效的发货数量', 'error');
-                return;
-            }
-            
-            if (shipmentQty > maxQty) {
-                showStatus(`发货数量不能超过${maxQty}`, 'error');
-                return;
-            }
-            
-            showStatus('正在处理发货...', 'loading');
-            
-            // 发送发货请求
-            authenticatedFetch('/api/shipment/process', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    source_table: currentTable,
-                    po: po,
-                    pn: pn,
-                    po_line: poLine,
-                    shipment_qty: shipmentQty,
-                    max_qty: maxQty
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showStatus('发货处理成功', 'success');
-                    // 关闭模态框
-                    const modalElement = document.getElementById('shipmentModal');
-                    const modal = bootstrap.Modal.getInstance(modalElement);
-                    if (modal) {
-                        modal.hide();
-                    }
-                    // 重新加载表数据
-                    loadTableData();
-                } else {
-                    showStatus(`发货失败: ${data.message}`, 'error');
-                }
-            })
-            .catch(error => {
-                showStatus(`发货失败: ${error}`, 'error');
+            selectedItemsForShipment.forEach((item, poLine) => {
+                const description = item.description || '未提供';
+                const description_preview = description.length > 100 ? description.substring(0, 100) + '...' : description;
+                
+                const itemHtml = `
+                    <div class="card mb-2" style="border: 1px solid #e2e8f0;">
+                        <div class="card-body" style="padding: 12px;">
+                            <div class="row align-items-center">
+                                <div class="col-md-3">
+                                    <label class="form-label" style="font-weight: 600; margin-bottom: 5px;">PO/Line</label>
+                                    <div style="padding: 8px; background: #f7fafc; border-radius: 4px; font-weight: 500;">${poLine}</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">PO/Line</label>
+                                    <div style="padding: 8px; background: #f7fafc; border-radius: 4px; font-weight: 500;">${poLine}</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" style="font-weight: 600; margin-bottom: 5px;">Description</label>
+                                    <div style="padding: 8px; background: #f7fafc; border-radius: 4px; font-size: 0.9rem; word-break: break-word;" title="${description}">${description_preview}</div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Shipment Qty <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control shipment-qty-input" data-po-line="${poLine}" data-max-qty="${item.qty}" placeholder="0.00" step="0.01" min="0" value="">
+                                    <small class="text-muted">Max: ${item.qty}</small>
+                                </div>
+                                <div class="col-md-2" style="text-align: right;">
+                                    <label class="form-label" style="color: transparent;">x</label>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeFromShipmentSelection('${poLine}')">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += itemHtml;
             });
         }
         
+        // 确认全局发货
+        function confirmGlobalShipment() {
+            // 验证常规信息
+            const trackingNo = document.getElementById('globalTrackingNo').value.trim();
+            const shippingMode = document.getElementById('globalShippingMode').value.trim();
+            const shippingCostStr = document.getElementById('globalShippingCost').value.trim();
+            
+            if (!trackingNo) {
+                showStatus('Please enter tracking number', 'error');
+                return;
+            }
+            
+            if (!shippingMode) {
+                showStatus('Please select shipping method', 'error');
+                return;
+            }
+            
+            if (!shippingCostStr || parseFloat(shippingCostStr) < 0) {
+                showStatus('Please enter valid shipping cost', 'error');
+                return;
+            }
+            
+            // 验证发货数量
+            const qtyInputs = document.querySelectorAll('.shipment-qty-input');
+            const shipmentData = [];
+            let isValid = true;
+            
+            qtyInputs.forEach(input => {
+                const poLine = input.getAttribute('data-po-line');
+                const maxQty = parseFloat(input.getAttribute('data-max-qty'));
+                const shipmentQty = parseFloat(input.value) || 0;
+                
+                if (shipmentQty <= 0) {
+                    showStatus(`PO/Line ${poLine}: Please enter valid shipment quantity`, 'error');
+                    isValid = false;
+                    return;
+                }
+                
+                if (shipmentQty > maxQty) {
+                    showStatus(`PO/Line ${poLine}: Shipment quantity cannot exceed ${maxQty}`, 'error');
+                    isValid = false;
+                    return;
+                }
+                
+                shipmentData.push({
+                    po_line: poLine,
+                    shipment_qty: shipmentQty
+                });
+            });
+            
+            if (!isValid || shipmentData.length === 0) {
+                return;
+            }
+            
+            // 解析运费数值（去掉possible的"shared:"前缀用于显示，但实际发送给后端时分离）
+            const shippingCostValue = parseFloat(shippingCostStr);
+            const itemCount = selectedItemsForShipment.size;
+            
+            // 发送一个一个的发货请求
+            showStatus('Processing shipment...', 'loading');
+            
+            const shipmentRequests = shipmentData.map(data => {
+                const item = selectedItemsForShipment.get(data.po_line);
+                return authenticatedFetch('/api/shipment/process', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        source_table: currentTable,
+                        po: item.po,
+                        pn: item.pn,
+                        po_line: item.po_line,
+                        shipment_qty: data.shipment_qty,
+                        max_qty: item.qty,
+                        tracking_no: trackingNo,
+                        shipping_mode: shippingMode,
+                        shipping_cost: shippingCostValue,
+                        is_shared: itemCount > 1
+                    })
+                });
+            });
+            
+            // 执行所有请求
+            Promise.all(shipmentRequests)
+                .then(responses => Promise.all(responses.map(r => r.json())))
+                .then(results => {
+                    // 检查是否有失败
+                    const hasError = results.some(r => !r.success);
+                    
+                    if (hasError) {
+                        const errors = results.filter(r => !r.success).map(r => r.message).join('; ');
+                        showStatus(`Shipment partially failed: ${errors}`, 'error');
+                    } else {
+                        showStatus('All materials have been shipped!', 'success');
+                        
+                        // 关闭modal
+                        const modalElement = document.getElementById('globalShipmentModal');
+                        const modal = bootstrap.Modal.getInstance(modalElement);
+                        if (modal) {
+                            modal.hide();
+                        }
+                        
+                        // 重新加载表数据
+                        setTimeout(() => loadTableData(), 800);
+                    }
+                })
+                .catch(error => {
+                    showStatus(`Shipment failed: ${error}`, 'error');
+                });
+        }
+        
+        // 设置发货确认按钮事件
+        document.addEventListener('DOMContentLoaded', function() {
+            const confirmGlobalShipmentBtn = document.getElementById('confirmGlobalShipmentBtn');
+            if (confirmGlobalShipmentBtn) {
+                confirmGlobalShipmentBtn.addEventListener('click', confirmGlobalShipment);
+            }
+        });
+
+        // 从行操作中删除记录
         function deleteRowRecord(key, tableName) {
             if (!key) {
-                showStatus('无法获取记录的关键字段', 'error');
+                showStatus('Unable to get critical fields for record', 'error');
                 return;
             }
             
@@ -2431,8 +2744,8 @@
             const fieldName = isOpenTable ? 'po_line' : 'id';
             
             // 显示确认对话框
-            showConfirmModal(`确定要删除此记录吗？此操作不可撤销。`, function() {
-                showStatus('正在删除记录...', 'loading');
+            showConfirmModal(`Are you sure you want to delete this record? This action cannot be undone.`, function() {
+                showStatus('Deleting record...', 'loading');
                 
                 // 使用 POST 请求，传递 key 和 key_field 在请求体中
                 authenticatedFetch(`/api/tables/${tableName}`, {
@@ -2448,14 +2761,14 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        showStatus('记录删除成功', 'success');
+                        showStatus('Record deleted successfully', 'success');
                         loadTableData(); // 重新加载数据
                     } else {
-                        showStatus(`删除失败: ${data.message}`, 'error');
+                        showStatus(`Delete failed: ${data.message}`, 'error');
                     }
                 })
                 .catch(error => {
-                    showStatus(`删除失败: ${error}`, 'error');
+                    showStatus(`Delete failed: ${error}`, 'error');
                 });
             });
         }
@@ -2476,8 +2789,8 @@
             }
             
             // 显示确认对话框
-            showConfirmModal(`确定要删除PN号为 ${pn} 的记录吗？此操作不可撤销。`, function() {
-                showStatus('正在删除记录...', 'loading');
+            showConfirmModal(`Are you sure you want to delete the record with PN number ${pn}? This action cannot be undone.`, function() {
+                showStatus('Deleting record...', 'loading');
                 
                 authenticatedFetch(`/api/tables/${currentTable}/${pn}`, {
                     method: 'DELETE'
@@ -2485,62 +2798,62 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        showStatus('记录删除成功', 'success');
+                        showStatus('Record deleted successfully', 'success');
                         document.getElementById('deletePN').value = '';
                         loadTableData(); // 重新加载数据
                     } else {
-                        showStatus(`删除失败: ${data.message}`, 'error');
+                        showStatus(`Delete failed: ${data.message}`, 'error');
                     }
                 })
                 .catch(error => {
-                    showStatus(`删除失败: ${error}`, 'error');
+                    showStatus(`Delete failed: ${error}`, 'error');
                 });
             });
         }
         
-        // 更新记录计数
+        // Update record count
         function updateRecordCount() {
             const countElement = document.getElementById('recordCount');
             const startIndex = (currentPage - 1) * itemsPerPage + 1;
             const endIndex = Math.min(currentPage * itemsPerPage, filteredData.length);
-            countElement.textContent = `显示第 ${startIndex}-${endIndex} 条记录，共 ${filteredData.length} 条记录`;
+            countElement.textContent = `Showing records ${startIndex}-${endIndex}, Total: ${filteredData.length}`;
         }
         
-        // 渲染分页控件
+        // Render pagination
         function renderPagination() {
             const totalPages = Math.ceil(filteredData.length / itemsPerPage);
             
-            // 如果只有一页或没有数据，则不显示分页控件
+            // Hide pagination if only one page or no data
             if (totalPages <= 1) {
                 document.getElementById('paginationContainer').innerHTML = '';
                 return;
             }
             
             let paginationHtml = `
-                <nav aria-label="分页导航">
+                <nav aria-label="Pagination Navigation">
                     <ul class="pagination justify-content-center">
             `;
             
-            // 上一页按钮
+            // Previous page button
             if (currentPage > 1) {
                 paginationHtml += `
                     <li class="page-item">
-                        <a class="page-link" href="#" onclick="changePage(${currentPage - 1}); return false;">上一页</a>
+                        <a class="page-link" href="#" onclick="changePage(${currentPage - 1}); return false;">Previous</a>
                     </li>
                 `;
             } else {
                 paginationHtml += `
                     <li class="page-item disabled">
-                        <span class="page-link">上一页</span>
+                        <span class="page-link">Previous</span>
                     </li>
                 `;
             }
             
-            // 页码按钮
+            // Page number buttons
             let startPage = Math.max(1, currentPage - 2);
             let endPage = Math.min(totalPages, currentPage + 2);
             
-            // 确保始终显示5个页码按钮（如果可能）
+            // Ensure always showing 5 page buttons (if possible)
             if (endPage - startPage < 4) {
                 if (startPage === 1) {
                     endPage = Math.min(totalPages, startPage + 4);
@@ -2565,17 +2878,17 @@
                 }
             }
             
-            // 下一页按钮
+            // Next page button
             if (currentPage < totalPages) {
                 paginationHtml += `
                     <li class="page-item">
-                        <a class="page-link" href="#" onclick="changePage(${currentPage + 1}); return false;">下一页</a>
+                        <a class="page-link" href="#" onclick="changePage(${currentPage + 1}); return false;">Next</a>
                     </li>
                 `;
             } else {
                 paginationHtml += `
                     <li class="page-item disabled">
-                        <span class="page-link">下一页</span>
+                        <span class="page-link">Next</span>
                     </li>
                 `;
             }
@@ -2599,7 +2912,7 @@
             }
         }
         
-        // 更新表标题
+        // Update table title
         function updateTableTitle() {
             const titleMap = {
                 'wf_open': 'WF Open',
@@ -2609,7 +2922,7 @@
             };
             
             const titleElement = document.getElementById('tableTitle');
-            titleElement.textContent = `${titleMap[currentTable] || currentTable} 表数据`;
+            titleElement.textContent = `${titleMap[currentTable] || currentTable} Table Data`;
         }
         
         // 显示状态消息

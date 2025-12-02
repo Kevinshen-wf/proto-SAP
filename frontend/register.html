@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>用户注册 - Wefabricate系统</title>
+    <title>User Registration - Wefabricate System</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -91,20 +91,20 @@
 </head>
 <body>
     <div class="container">
-        <h2>用户注册</h2>
+        <h2>User Registration</h2>
         <div id="message" class="message hidden"></div>
         <form id="registerForm">
             <div class="form-group">
-                <label for="email">邮箱:</label>
+                <label for="email">Email:</label>
                 <div style="display: flex;">
-                    <input type="text" id="email" required placeholder="请输入邮箱用户名">
+                    <input type="text" id="email" required placeholder="Enter email username">
                     <span style="padding: 12px 10px; background-color: #f8f9fa; border: 1px solid #ddd; border-left: none; border-radius: 0 4px 4px 0;">@wefabricate.com</span>
                 </div>
             </div>
-            <button type="submit" id="submitBtn">注册</button>
+            <button type="submit" id="submitBtn">Register</button>
         </form>
         <div class="login-link">
-            <a href="/">返回登录</a>
+            <a href="/">Back to Login</a>
         </div>
     </div>
 
@@ -122,13 +122,13 @@
             
             // 验证邮箱用户名
             if (!emailUsername) {
-                showMessage('请输入邮箱用户名', 'error');
+                showMessage('Please enter email username', 'error');
                 return;
             }
             
             // 禁用提交按钮防止重复提交
             submitBtn.disabled = true;
-            submitBtn.textContent = '注册中...';
+            submitBtn.textContent = 'Registering...';
             
             // 发送注册请求
             fetch('/api/user/register', {
@@ -144,7 +144,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showMessage('注册成功，正在跳转到密码设置...', 'success');
+                    showMessage('Registration successful, redirecting to password setup...', 'success');
                     // 2秒后跳转到设置密码页面，使用用户ID
                     setTimeout(() => {
                         // 跳转到设置密码页面，传递用户ID和邮箱信息
@@ -154,14 +154,14 @@
                     showMessage(data.error, 'error');
                     // 重新启用提交按钮
                     submitBtn.disabled = false;
-                    submitBtn.textContent = '注册';
+                    submitBtn.textContent = 'Register';
                 }
             })
             .catch(error => {
-                showMessage('注册时发生错误: ' + error.message, 'error');
+                showMessage('Registration error: ' + error.message, 'error');
                 // 重新启用提交按钮
                 submitBtn.disabled = false;
-                submitBtn.textContent = '注册';
+                submitBtn.textContent = 'Register';
             });
         });
         

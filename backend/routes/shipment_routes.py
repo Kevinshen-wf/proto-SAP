@@ -30,7 +30,11 @@ def process_shipment():
             shipment_qty=data.get('shipment_qty'),
             max_qty=data.get('max_qty'),
             user_email=user_email,
-            po_line=data.get('po_line')
+            po_line=data.get('po_line'),
+            tracking_no=data.get('tracking_no'),
+            shipping_mode=data.get('shipping_mode'),
+            shipping_cost=data.get('shipping_cost'),
+            is_shared=data.get('is_shared', False)
         )
         
         return jsonify(result)

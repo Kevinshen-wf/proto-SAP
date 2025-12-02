@@ -25,7 +25,7 @@ class ShipmentController:
             print(f"数据库连接失败: {error}")
             return None
     
-    def process_shipment(self, source_table, po, pn, shipment_qty, max_qty, user_email, po_line=None):
+    def process_shipment(self, source_table, po, pn, shipment_qty, max_qty, user_email, po_line=None, tracking_no=None, shipping_mode=None, shipping_cost=None, is_shared=False):
         """
         处理发货
         
@@ -36,6 +36,11 @@ class ShipmentController:
             shipment_qty: 发货数量
             max_qty: 最大可发货数量
             user_email: 用户邮箱
+            po_line: PO/行号
+            tracking_no: 追踪号
+            shipping_mode: 运输方式
+            shipping_cost: 运费
+            is_shared: 是否是整发货（不是整发货需添加shared:前缀）
             
         Returns:
             dict: 处理结果
@@ -83,9 +88,21 @@ class ShipmentController:
             # 检查是否是全部发货
             is_full_shipment = (shipment_qty >= max_qty)
             
-            # 准备closed表的数据（复制open表数据，修改qty和total_price）
+            # 准备closed表的数据（复制open表数据，修改qty、total_price以及新字段）
             closed_record = open_record.copy()
             closed_record['qty'] = shipment_qty
+            
+            # 设置发货相关字段
+            if tracking_no:
+                closed_record['tracking_no'] = tracking_no
+            if shipping_mode:
+                closed_record['shipping_mode'] = shipping_mode if source_table == 'non_wf_open' else shipping_mode
+                if source_table == 'wf_open':
+                    closed_record['wfsz_shipping_mode'] = shipping_mode
+            if shipping_cost is not None:
+                # 运费处理：永远只存储数值，不在数据库中存储shared:前缀
+                # shared:前缀只作为UI显示标记，后端只需存储数字值
+                closed_record['shipping_cost'] = shipping_cost
             
             # 计算total_price（qty * net_price）
             net_price = float(closed_record.get('net_price') or 0)
