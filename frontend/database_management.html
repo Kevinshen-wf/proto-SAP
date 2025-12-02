@@ -114,7 +114,7 @@
         .table-container {
             background: white;
             border-radius: 8px;
-            padding: 20px;
+            padding: 8px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.08);
             margin-bottom: 25px;
             animation: fadeInUp 0.6s ease;
@@ -125,22 +125,22 @@
         /* 根据缩放比例调整内边距 */
         @media (min-width: 1600px) {
             .table-container {
-                padding: 30px 40px;
+                padding: 10px;
             }
         }
         @media (min-width: 1200px) and (max-width: 1599px) {
             .table-container {
-                padding: 25px 35px;
+                padding: 10px;
             }
         }
         @media (min-width: 992px) and (max-width: 1199px) {
             .table-container {
-                padding: 20px 30px;
+                padding: 8px;
             }
         }
         @media (max-width: 991px) {
             .table-container {
-                padding: 15px 20px;
+                padding: 8px;
             }
         }
         
@@ -158,16 +158,16 @@
         .table-container h5 {
             color: #1a202c;
             font-weight: 600;
-            margin-bottom: 20px;
-            font-size: 1.1rem;
+            margin-bottom: 8px;
+            font-size: 1rem;
         }
         
         .editable-cell {
             cursor: text;
-            padding: 10px 8px;
+            padding: 6px 4px;
             border: 1px solid transparent;
             transition: all 0.2s ease;
-            min-height: 40px;
+            min-height: 32px;
             display: table-cell;
             vertical-align: middle;
             color: #2d3748;
@@ -175,6 +175,7 @@
             word-wrap: break-word;
             word-break: break-word;
             overflow: visible;
+            font-size: 0.9rem;
         }
         
         .editable-cell:hover {
@@ -451,54 +452,68 @@
         /* Description 和 Comment 列的特殊样式 - 支持换行，使用!important保证优先级 */
         .table td.description-cell,
         .table td.comment-cell {
+            white-space: nowrap !important;
+            word-wrap: normal !important;
+            word-break: normal !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            max-width: 140px !important;
+            min-height: 32px !important;
+            vertical-align: middle !important;
+            padding: 6px 4px !important;
+            line-height: 1.4 !important;
+        }
+        
+        /* PO PN eta_wfsz 等列不能用省略号，必须完整排流轮换行水平散布 */
+        .table td.no-ellipsis-cell {
             white-space: normal !important;
             word-wrap: break-word !important;
             word-break: break-word !important;
             overflow: visible !important;
             text-overflow: clip !important;
-            max-width: 1000px !important;
-            min-height: 40px !important;
-            vertical-align: top !important;
-            padding: 10px !important;
-            line-height: 1.4 !important;
+            min-height: 32px !important;
+            vertical-align: middle !important;
+            padding: 6px 4px !important;
+            line-height: 1.3 !important;
+            font-size: 0.85rem !important;
         }
         
         /* 响应式：根据屏幕大小调整 Description 和 Comment 的最大宽度 */
         @media (min-width: 1600px) {
             .table td.description-cell,
             .table td.comment-cell {
-                max-width: 1200px !important;
+                max-width: 180px !important;
             }
         }
         @media (min-width: 1400px) and (max-width: 1599px) {
             .table td.description-cell,
             .table td.comment-cell {
-                max-width: 1100px !important;
+                max-width: 170px !important;
             }
         }
         @media (min-width: 1200px) and (max-width: 1399px) {
             .table td.description-cell,
             .table td.comment-cell {
-                max-width: 1000px !important;
+                max-width: 160px !important;
             }
         }
         @media (min-width: 992px) and (max-width: 1199px) {
             .table td.description-cell,
             .table td.comment-cell {
-                max-width: 800px !important;
+                max-width: 150px !important;
             }
         }
         @media (min-width: 768px) and (max-width: 991px) {
             .table td.description-cell,
             .table td.comment-cell {
-                max-width: 600px !important;
+                max-width: 140px !important;
                 font-size: 0.9rem;
             }
         }
         @media (max-width: 767px) {
             .table td.description-cell,
             .table td.comment-cell {
-                max-width: 400px !important;
+                max-width: 120px !important;
                 font-size: 0.8rem;
             }
         }
@@ -1130,8 +1145,8 @@
             const tableColumns = {
                 'wf_open': ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date_wf', 'eta_wfsz', 'wfsz_shipping_mode', 'comment', 'po_placed_date', 'purchaser', 'record_no', 'shipping_cost', 'tracking_no', 'so_number', 'latest_departure_date', 'chinese_name', 'unit', 'company'],
                 'wf_closed': ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date_wf', 'eta_wfsz', 'wfsz_shipping_mode', 'comment', 'po_placed_date', 'purchaser', 'record_no', 'shipping_cost', 'tracking_no', 'so_number', 'chinese_name', 'unit', 'company'],
-                'non_wf_open': ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date', 'eta_wfsz', 'shipping_mode', 'comment', 'po_placed_date', 'qc_result', 'shipping_cost', 'tracking_no', 'so_number', 'yes_not_paid', 'company'],
-                'non_wf_closed': ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date', 'eta_wfsz', 'shipping_mode', 'comment', 'po_placed_date', 'purchaser', 'shipping_cost', 'tracking_no', 'so_number', 'yes_not_paid', 'company']
+                'non_wf_open': ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date', 'eta_wfsz', 'shipping_mode', 'comment', 'po_placed_date', 'record_no', 'shipping_cost', 'tracking_no', 'so_number', 'company'],
+                'non_wf_closed': ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date', 'eta_wfsz', 'shipping_mode', 'comment', 'po_placed_date', 'purchaser', 'shipping_cost', 'tracking_no', 'so_number', 'company']
             };
             
             // 返回对应表的列顺序，如果没有定义则返回默认顺序
@@ -1141,32 +1156,9 @@
         // 获取列的显示名称
         function getColumnDisplayName(columnName) {
             const displayNameMap = {
-                'po': '采购订单号',
-                'pn': '零件号',
-                'line': '行号',
-                'po_line': 'PO/Line',
-                'description': '描述',
-                'qty': '数量',
-                'net_price': '净价',
-                'total_price': '总价',
-                'req_date_wf': '要求日期(WF)',
-                'req_date': '要求日期',
-                'eta_wfsz': 'ETA WFSZ',
-                'shipping_mode': '运输方式',
-                'wfsz_shipping_mode': '运输方式',
-                'comment': '备注',
-                'po_placed_date': '采购订单下达日期',
-                'purchaser': '采购员',
-                'record_no': '记录号',
-                'shipping_cost': '运费',
-                'tracking_no': '追踪号',
-                'so_number': '销售订单号',
-                'latest_departure_date': '最晚发货日期',
-                'chinese_name': '中文名称',
-                'unit': '单位',
-                'qc_result': '质检结果',
-                'yes_not_paid': '是否已付款',
-                'company': '公司'
+                'wfsz_shipping_mode': 'ship_mode',
+                'so_number': 'so_no',
+                'latest_departure_date': 'dep_date',
             };
             
             return displayNameMap[columnName] || columnName;
@@ -1205,6 +1197,118 @@
                 });
         }
         
+        // ... existing code ...
+        
+        // 自动调整列宽
+        function adjustColumnWidths() {
+            const table = document.querySelector('.table');
+            if (!table) return;
+            
+            const rows = table.querySelectorAll('tbody tr');
+            if (rows.length === 0) return;
+            
+            const headerCells = table.querySelectorAll('thead th');
+            const maxWidths = new Map();
+            const minColumnWidth = 80; // 最小列宽
+            
+            // 设置特定列的预设最大宽度
+            const columnMaxWidths = {
+                'description': 140,
+                'comment': 150,
+                'po': 110,
+                'pn': 110,
+                'line': 50,
+                'po_line': 110,
+                'qty': 90,
+                'net_price': 90,
+                'total_price': 100,
+                'company': 110,
+                'purchaser': 110,
+                'record_no': 95,
+                'shipping_cost': 100,
+                'tracking_no': 110,
+                'eta_wfsz': 110,
+                'req_date_wf': 100,
+                'req_date': 100,
+                'po_placed_date': 110,
+                'wfsz_shipping_mode': 90,
+                'ship_mode': 90,
+                'so_number': 80,
+                'so_no': 80,
+                'latest_departure_date': 90,
+                'dep_date': 90,
+                'Actions': 70
+            };
+            
+            // 遍历表头获取列名
+            headerCells.forEach((th, colIndex) => {
+                const columnName = th.textContent.trim();
+                
+                // Actions列单独处理
+                if (columnName === 'Actions') {
+                    const actionWidth = 70;
+                    th.style.width = actionWidth + 'px';
+                    th.style.minWidth = actionWidth + 'px';
+                    th.style.maxWidth = actionWidth + 'px';
+                    th.style.fontSize = '0.9rem';
+                    return;
+                }
+                
+                let maxWidth = columnMaxWidths[columnName] || 150;
+                let width = columnName.length * 8 + 16; // 先用标题宽度
+                
+                // 计算该列中所有内容的最大宽度
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    if (cells[colIndex]) {
+                        const cell = cells[colIndex];
+                        const text = cell.textContent.trim();
+                        // 估算文本宽度（粗略计算）
+                        const estimatedWidth = Math.ceil(text.length * 7 + 16); // 每个字符约7px + padding
+                        width = Math.max(width, estimatedWidth);
+                    }
+                });
+                
+                // 取最小值和设定的最大值
+                const finalWidth = Math.min(Math.max(width, minColumnWidth), maxWidth);
+                maxWidths.set(colIndex, finalWidth);
+            });
+            
+            // 应用列宽
+            headerCells.forEach((th, colIndex) => {
+                const width = maxWidths.get(colIndex);
+                if (width) {
+                    th.style.width = width + 'px';
+                    th.style.minWidth = width + 'px';
+                    th.style.maxWidth = width + 'px';
+                    th.style.overflow = 'hidden';
+                    th.style.textOverflow = 'ellipsis';
+                    th.style.whiteSpace = 'nowrap';
+                    th.style.fontSize = '0.9rem';
+                }
+            });
+            
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                cells.forEach((cell, colIndex) => {
+                    // Actions列（第一列）
+                    if (colIndex === 0) {
+                        cell.style.width = '70px';
+                        cell.style.minWidth = '70px';
+                        cell.style.maxWidth = '70px';
+                        return;
+                    }
+                    
+                    const width = maxWidths.get(colIndex);
+                    if (width) {
+                        cell.style.width = width + 'px';
+                        cell.style.minWidth = width + 'px';
+                        cell.style.maxWidth = width + 'px';
+                    }
+                });
+            });
+        }
+        
         // 渲染表格
         function renderTable() {
             renderTableHeader();
@@ -1213,6 +1317,8 @@
             updateRecordCount();
             renderPagination();
             updateTableTitle();
+            // 应用自动列宽
+            setTimeout(() => adjustColumnWidths(), 0);
         }
         
         // 渲染表体
@@ -1337,6 +1443,8 @@
                         cellClass += ' description-cell';
                     } else if (col === 'comment') {
                         cellClass += ' comment-cell';
+                    } else if (col === 'po' || col === 'pn' || col === 'eta_wfsz') {
+                        cellClass += ' no-ellipsis-cell';
                     }
                     
                     rowHtml += `<td class="${cellClass}" data-column="${col}" data-row="${rowIndex}" ondblclick="editCell(this)">${escapedValue}</td>`;
@@ -1348,24 +1456,7 @@
             
             body.innerHTML = tableHtml;
             
-            // 为 description 和 comment 单元格使用 JavaScript 设置样式（在渲染后应用样式）
-            const descriptionCells = body.querySelectorAll('td.description-cell, td.comment-cell');
-            descriptionCells.forEach(cell => {
-                // 计算每个列的最大内容宽度
-                const text = cell.textContent || '';
-                const estimatedWidth = Math.min(text.length * 8 + 20, 800);
-                
-                cell.style.minWidth = estimatedWidth + 'px';
-                cell.style.whiteSpace = 'normal';
-                cell.style.wordWrap = 'break-word';
-                cell.style.wordBreak = 'break-word';
-                cell.style.overflow = 'visible';
-                cell.style.padding = '10px';
-                cell.style.verticalAlign = 'top';
-            });
-            
             paginatedData.forEach((row, index) => {
-                const rowIndex = startIndex + index;
                 const checkQty = parseFloat(row.qty) || 0;
                 const netPrice = parseFloat(row.net_price) || 0;
                 const totalPrice = parseFloat(row.total_price) || 0;
@@ -1392,7 +1483,8 @@
             let headerHtml = '<tr>';
             headerHtml += '<th>Actions</th>';
             columnNames.forEach(col => {
-                headerHtml += `<th>${col}</th>`;
+                const displayName = getColumnDisplayName(col);
+                headerHtml += `<th>${displayName}</th>`;
             });
             headerHtml += '</tr>';
             
@@ -2582,23 +2674,21 @@
                 const itemHtml = `
                     <div class="card mb-2" style="border: 1px solid #e2e8f0;">
                         <div class="card-body" style="padding: 12px;">
-                            <div class="row align-items-center">
-                                <div class="col-md-3">
-                                    <label class="form-label" style="font-weight: 600; margin-bottom: 5px;">PO/Line</label>
-                                    <div style="padding: 8px; background: #f7fafc; border-radius: 4px; font-weight: 500;">${poLine}</div>
+                            <div class="row align-items-center" style="display: flex; flex-wrap: nowrap; gap: 5px;">
+                                <div style="flex: 0 0 100px;">
+                                    <label class="form-label" style="font-weight: 600; margin-bottom: 3px; font-size: 0.8rem;">PO/Line</label>
+                                    <div style="padding: 4px 5px; background: #f7fafc; border-radius: 3px; font-weight: 500; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${poLine}</div>
                                 </div>
-                                <div class="col-md-5">
-                                    <label class="form-label" style="font-weight: 600; margin-bottom: 5px;">Description</label>
-                                    <div style="padding: 8px; background: #f7fafc; border-radius: 4px; font-size: 0.9rem; word-break: break-word;" title="${description}">${description_preview}</div>
+                                <div style="flex: 1 1 auto; min-width: 250px;">
+                                    <label class="form-label" style="font-weight: 600; margin-bottom: 3px; font-size: 0.8rem;">Description</label>
+                                    <div style="padding: 4px 5px; background: #f7fafc; border-radius: 3px; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${description}">${description}</div>
                                 </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Shipment Qty <span class="text-danger">*</span></label>
-                                    <input type="number" class="form-control shipment-qty-input" data-po-line="${poLine}" data-max-qty="${item.qty}" placeholder="0.00" step="0.01" min="0" value="">
-                                    <small class="text-muted">Max: ${item.qty}</small>
+                                <div style="flex: 0 0 130px;">
+                                    <label class="form-label" style="font-size: 0.8rem; margin-bottom: 3px;">Qty <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control form-control-sm shipment-qty-input" data-po-line="${poLine}" data-max-qty="${item.qty}" placeholder="0" step="0.01" min="0" value="" style="padding: 3px 5px; font-size: 0.8rem; height: 28px;">
                                 </div>
-                                <div class="col-md-2" style="text-align: right;">
-                                    <label class="form-label" style="color: transparent;">x</label>
-                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeFromShipmentSelection('${poLine}')">Cancel</button>
+                                <div style="flex: 0 0 30px; display: flex; align-items: center; justify-content: center; height: 55px;">
+                                    <button type="button" class="btn btn-sm" style="background: none; border: none; color: #f56565; cursor: pointer; font-size: 1.2rem; padding: 0; line-height: 1;" onclick="removeFromShipmentSelection('${poLine}')" title="Remove">✕</button>
                                 </div>
                             </div>
                         </div>
