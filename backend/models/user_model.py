@@ -85,9 +85,12 @@ class UserManager:
         try:
             cursor = conn.cursor()
             
+            # 邮箱转换为小写（不区分大小写）
+            email_lower = email.lower()
+            
             # 检查用户是否已存在
-            check_query = "SELECT id FROM purchase_orders.users WHERE email = %s"
-            cursor.execute(check_query, (email,))
+            check_query = "SELECT id FROM purchase_orders.users WHERE LOWER(email) = %s"
+            cursor.execute(check_query, (email_lower,))
             if cursor.fetchone():
                 cursor.close()
                 conn.close()
@@ -95,20 +98,22 @@ class UserManager:
 
             # 生成验证令牌
             verification_token = self.generate_verification_token()
-            token_expires = datetime.datetime.now() + datetime.timedelta(hours=24)  # 24小时过期
+            token_expires = datetime.datetime.now() + datetime.timedelta(seconds=30)  # 30秒过期
             
             # 插入新用户（未验证状态）
             insert_query = """
             INSERT INTO purchase_orders.users (email, verification_token, token_expires)
             VALUES (%s, %s, %s)
+            RETURNING id
             """
-            cursor.execute(insert_query, (email, verification_token, token_expires))
+            cursor.execute(insert_query, (email_lower, verification_token, token_expires))
+            user_id = cursor.fetchone()[0]
             
             conn.commit()
             cursor.close()
             conn.close()
             
-            return True, verification_token
+            return True, {"user_id": user_id, "verification_token": verification_token}
         except Exception as error:
             if conn:
                 conn.rollback()
@@ -199,12 +204,15 @@ class UserManager:
         try:
             cursor = conn.cursor()
             
+            # 邮箱转换为小写进行查询（不区分大小写）
+            email_lower = email.lower()
+            
             # 获取用户信息
             select_query = """
             SELECT id, password_hash, is_verified FROM purchase_orders.users 
-            WHERE email = %s
+            WHERE LOWER(email) = %s
             """
-            cursor.execute(select_query, (email,))
+            cursor.execute(select_query, (email_lower,))
             user = cursor.fetchone()
             
             if not user:

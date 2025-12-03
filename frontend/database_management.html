@@ -1156,9 +1156,9 @@
         // 获取列的显示名称
         function getColumnDisplayName(columnName) {
             const displayNameMap = {
-                'wfsz_shipping_mode': 'ship_mode',
-                'so_number': 'so_no',
-                'latest_departure_date': 'dep_date',
+                'wfsz_shipping_mode': 'Ship Mode',
+                'so_number': 'SO No',
+                'latest_departure_date': 'Dep Date',
             };
             
             return displayNameMap[columnName] || columnName;
@@ -1232,11 +1232,8 @@
                 'req_date': 100,
                 'po_placed_date': 110,
                 'wfsz_shipping_mode': 90,
-                'ship_mode': 90,
                 'so_number': 80,
-                'so_no': 80,
                 'latest_departure_date': 90,
-                'dep_date': 90,
                 'Actions': 70
             };
             
@@ -2670,6 +2667,7 @@
             selectedItemsForShipment.forEach((item, poLine) => {
                 const description = item.description || '未提供';
                 const description_preview = description.length > 100 ? description.substring(0, 100) + '...' : description;
+                const maxQty = item.qty || 0;
                 
                 const itemHtml = `
                     <div class="card mb-2" style="border: 1px solid #e2e8f0;">
@@ -2683,9 +2681,13 @@
                                     <label class="form-label" style="font-weight: 600; margin-bottom: 3px; font-size: 0.8rem;">Description</label>
                                     <div style="padding: 4px 5px; background: #f7fafc; border-radius: 3px; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${description}">${description}</div>
                                 </div>
-                                <div style="flex: 0 0 130px;">
-                                    <label class="form-label" style="font-size: 0.8rem; margin-bottom: 3px;">Qty <span class="text-danger">*</span></label>
-                                    <input type="number" class="form-control form-control-sm shipment-qty-input" data-po-line="${poLine}" data-max-qty="${item.qty}" placeholder="0" step="0.01" min="0" value="" style="padding: 3px 5px; font-size: 0.8rem; height: 28px;">
+                                <div style="flex: 0 0 100px;">
+                                    <label class="form-label" style="font-size: 0.8rem; margin-bottom: 3px;">Max Qty</label>
+                                    <div style="padding: 4px 5px; background: #f7fafc; border-radius: 3px; font-weight: 500; font-size: 0.8rem; text-align: right;">${maxQty}</div>
+                                </div>
+                                <div style="flex: 0 0 110px;">
+                                    <label class="form-label" style="font-size: 0.8rem; margin-bottom: 3px; display: inline;">Shipment Qty</label><span class="text-danger" style="font-size: 0.8rem;">*</span>
+                                    <input type="number" class="form-control form-control-sm shipment-qty-input" data-po-line="${poLine}" data-max-qty="${maxQty}" placeholder="0" step="0.01" min="0" value="${maxQty}" style="padding: 3px 5px; font-size: 0.8rem; height: 28px; margin-top: 2px;">
                                 </div>
                                 <div style="flex: 0 0 30px; display: flex; align-items: center; justify-content: center; height: 55px;">
                                     <button type="button" class="btn btn-sm" style="background: none; border: none; color: #f56565; cursor: pointer; font-size: 1.2rem; padding: 0; line-height: 1;" onclick="removeFromShipmentSelection('${poLine}')" title="Remove">✕</button>

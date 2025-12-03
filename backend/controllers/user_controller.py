@@ -108,14 +108,11 @@ class UserController:
         if not success:
             return False, result
 
-        # 发送验证邮件
-        token = result  # result就是verification_token
-        email_success, email_message = self.send_verification_email(email, token)
+        # result是一个字典，包含 user_id 和 verification_token
+        user_id = result['user_id']
         
-        if not email_success:
-            return False, email_message
-
-        return True, "注册成功，请检查您的邮箱以完成验证"
+        # 注册成功，不发送邮件，直接返回用户ID
+        return True, {"user_id": user_id, "email": email, "message": "注册成功，请设置密码"}
 
     def verify_user_token(self, token):
         """验证用户令牌"""

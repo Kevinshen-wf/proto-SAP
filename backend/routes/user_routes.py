@@ -24,14 +24,20 @@ def register():
             return jsonify({'success': False, 'error': '邮箱不能为空'}), 400
         
         # 注册用户
-        success, message = user_controller.register_user(email, password)
+        success, result = user_controller.register_user(email, password)
         
-        print(f"注册结果: success={success}, message={message}")
+        print(f"注册结果: success={success}, result={result}")
         
         if success:
-            return jsonify({'success': True, 'message': message}), 201
+            return jsonify({
+                'success': True, 
+                'message': result.get('message'),
+                'user_id': result.get('user_id'),
+                'email': result.get('email')
+            }), 201
         else:
-            return jsonify({'success': False, 'error': message}), 400
+            # result是字符串错误消息
+            return jsonify({'success': False, 'error': result}), 400
     except Exception as e:
         print(f"注册时发生错误: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
