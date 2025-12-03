@@ -66,7 +66,7 @@ def create_wf_open_table(cursor):
         print(f"✗ 创建WF Open表时出错: {e}")
 
 def create_wf_closed_table(cursor):
-    """创建WF Closed表"""
+    """创建 WF Closed表"""
     try:
         create_table_query = """
         CREATE TABLE IF NOT EXISTS purchase_orders.wf_closed (
@@ -93,13 +93,14 @@ def create_wf_closed_table(cursor):
             chinese_name VARCHAR(100),
             unit VARCHAR(20),
             eta_wfsz DATE,
-            company VARCHAR(100)
+            company VARCHAR(100),
+            shipment_batch_no VARCHAR(50)
         )
         """
         cursor.execute(create_table_query)
-        print("✓ 成功创建WF Closed表")
+        print("✓ 成功创建 WF Closed表")
     except Exception as e:
-        print(f"✗ 创建WF Closed表时出错: {e}")
+        print(f"✗ 创建 WF Closed表時出错: {e}")
 
 def create_non_wf_open_table(cursor):
     """创建Non-WF Open表"""
@@ -136,7 +137,7 @@ def create_non_wf_open_table(cursor):
         print(f"✗ 创建Non-WF Open表时出错: {e}")
 
 def create_non_wf_closed_table(cursor):
-    """创建Non-WF Closed表"""
+    """创建 Non-WF Closed表"""
     try:
         create_table_query = """
         CREATE TABLE IF NOT EXISTS purchase_orders.non_wf_closed (
@@ -162,13 +163,60 @@ def create_non_wf_closed_table(cursor):
             yes_not_paid VARCHAR(10),
             line VARCHAR(50),
             po_line VARCHAR(100),
-            company VARCHAR(100)
+            company VARCHAR(100),
+            shipment_batch_no VARCHAR(50)
         )
         """
         cursor.execute(create_table_query)
-        print("✓ 成功创建Non-WF Closed表")
+        print("✓ 成功创建 Non-WF Closed表")
     except Exception as e:
-        print(f"✗ 创建Non-WF Closed表时出错: {e}")
+        print(f"✗ 创建 Non-WF Closed表時出错: {e}")
+
+def add_shipment_batch_no_column(cursor):
+    """
+    为closed表添加shipment_batch_no列和id列
+    """
+    try:
+        tables = ['wf_closed', 'non_wf_closed']
+        for table_name in tables:
+            # 检查列是否已经存在
+            check_columns_query = """
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_schema = 'purchase_orders' 
+                AND table_name = %s 
+                AND column_name IN ('shipment_batch_no', 'id')
+            """
+            cursor.execute(check_columns_query, (table_name,))
+            existing_columns = [row[0] for row in cursor.fetchall()]
+            
+            # 添加id列（如果不存在）
+            if 'id' not in existing_columns:
+                try:
+                    add_id_query = f"ALTER TABLE purchase_orders.{table_name} ADD COLUMN id SERIAL PRIMARY KEY"
+                    cursor.execute(add_id_query)
+                    print(f"✓ 成功添加id列到{table_name}表")
+                except:
+                    # 如果带PRIMARY KEY失败，仅添加不带PK的id列
+                    try:
+                        add_id_query = f"ALTER TABLE purchase_orders.{table_name} ADD COLUMN id SERIAL"
+                        cursor.execute(add_id_query)
+                        print(f"✓ 成功添加id列到{table_name}表（不带PRIMARY KEY）")
+                    except Exception as e:
+                        print(f"✗ 添加id列到{table_name}表时出错: {e}")
+            
+            # 添加shipment_batch_no列（如果不存在）
+            if 'shipment_batch_no' not in existing_columns:
+                try:
+                    add_batch_query = f"ALTER TABLE purchase_orders.{table_name} ADD COLUMN shipment_batch_no VARCHAR(50)"
+                    cursor.execute(add_batch_query)
+                    print(f"✓ 成功添加shipment_batch_no列到{table_name}表")
+                except Exception as e:
+                    print(f"✗ 添加shipment_batch_no列到{table_name}表时出错: {e}")
+            else:
+                print(f"✓ {table_name}表已经含有shipment_batch_no列")
+    except Exception as e:
+        print(f"✗ 处理closed表列時出错: {e}")
 
 def create_users_table(cursor):
     """创建用户表"""
@@ -248,6 +296,7 @@ def main():
             create_non_wf_closed_table(cursor)
             create_users_table(cursor)
             create_po_records_table(cursor)
+            add_shipment_batch_no_column(cursor)
             
             # 提交更改
             connection.commit()

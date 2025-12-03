@@ -34,7 +34,28 @@ def process_shipment():
             tracking_no=data.get('tracking_no'),
             shipping_mode=data.get('shipping_mode'),
             shipping_cost=data.get('shipping_cost'),
-            is_shared=data.get('is_shared', False)
+            is_shared=data.get('is_shared', False),
+            shipment_batch_no=data.get('shipment_batch_no')  # 新增：支持接收前端传来的批次号
+        )
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@shipment_bp.route('/return', methods=['POST'])
+def return_shipment():
+    """处理退货"""
+    try:
+        data = request.json
+        user_email = request.headers.get('X-User-Email', 'unknown@example.com')
+        
+        result = shipment_controller.return_shipment(
+            closed_table=data.get('closed_table'),
+            record_id=data.get('record_id'),
+            return_qty=data.get('return_qty'),
+            user_email=user_email,
+            new_shipping_cost=data.get('new_shipping_cost'),
+            shipment_batch_no=data.get('shipment_batch_no')
         )
         
         return jsonify(result)

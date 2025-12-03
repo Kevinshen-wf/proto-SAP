@@ -87,7 +87,7 @@ class DatabaseManager:
                     add_unit_query = f"ALTER TABLE purchase_orders.{table_name} ADD COLUMN unit VARCHAR(20)"
                     cursor.execute(add_unit_query)
             
-            # 对于 closed 表，添加 id 列（如果不存在）
+            # 对于 closed 表，添加 id 列和 shipment_batch_no 列（如果不存在）
             if table_name in ['wf_closed', 'non_wf_closed']:
                 # 检查 id 列是否存在
                 check_id_query = """
@@ -95,11 +95,13 @@ class DatabaseManager:
                     FROM information_schema.columns 
                     WHERE table_schema = 'purchase_orders' 
                     AND table_name = %s 
-                    AND column_name = 'id'
+                    AND column_name IN ('id', 'shipment_batch_no')
                 """
                 cursor.execute(check_id_query, (table_name,))
-                if not cursor.fetchone():
-                    # id 列不存在，添加之
+                existing_columns = [row[0] for row in cursor.fetchall()]
+                
+                # 添加 id 列（如果不存在）
+                if 'id' not in existing_columns:
                     add_id_query = f"ALTER TABLE purchase_orders.{table_name} ADD COLUMN id SERIAL PRIMARY KEY"
                     try:
                         cursor.execute(add_id_query)
@@ -107,6 +109,11 @@ class DatabaseManager:
                         # 如果带 PRIMARY KEY 失败，仅添加不带 PK 的 id 列
                         add_id_query = f"ALTER TABLE purchase_orders.{table_name} ADD COLUMN id SERIAL"
                         cursor.execute(add_id_query)
+                
+                # 添加 shipment_batch_no 列（如果不存在）
+                if 'shipment_batch_no' not in existing_columns:
+                    add_batch_query = f"ALTER TABLE purchase_orders.{table_name} ADD COLUMN shipment_batch_no VARCHAR(50)"
+                    cursor.execute(add_batch_query)
             
             # 构建查询语句
             if search_column and search_value:
@@ -230,8 +237,15 @@ class DatabaseManager:
                     # 如果找不到对应的po_line，则直接使用pn进行查找
                     primary_key_field = 'pn'
             elif table_name in ['wf_closed', 'non_wf_closed']:
-                # 对于这些表，我们仍然使用pn作为业务主键进行查找
-                primary_key_field = 'pn'
+                # 对于closed表：如果传进来的是整数，可能是id
+                try:
+                    id_value = int(pn)
+                    primary_key_field = 'id'
+                    primary_key_value = id_value
+                except (ValueError, TypeError):
+                    # 不是整数，使用pn作为主键
+                    primary_key_field = 'pn'
+                    primary_key_value = pn
             
             # 构建更新查询
             set_clauses = []

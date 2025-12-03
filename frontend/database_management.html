@@ -692,6 +692,27 @@
             cursor: pointer;
         }
         
+        /* 回退按钮样式 */
+        .return-shipment-btn {
+            background: #ffc107;
+            border: 1px solid #ff9800;
+            color: #333;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            min-width: 32px !important;
+        }
+        
+        .return-shipment-btn:hover {
+            background: #ff9800;
+            border-color: #f57c00;
+            color: white;
+            transform: scale(1.05);
+        }
+        
+        .return-shipment-btn:active {
+            transform: scale(0.95);
+        }
+        
         .delete-btn {
             background: none;
             border: none;
@@ -911,6 +932,58 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-primary" id="confirmGlobalShipmentBtn">Confirm Shipment</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 退货模态框 -->
+    <div class="modal fade" id="returnShipmentModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Return Shipment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">PO/Line</label>
+                            <input type="text" class="form-control" id="returnPoLine" readonly>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Description</label>
+                            <input type="text" class="form-control" id="returnDescription" readonly>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Return Quantity <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="returnQty" placeholder="0" step="0.01" min="0">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Max Available Qty</label>
+                            <input type="text" class="form-control" id="returnMaxQty" readonly>
+                        </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <strong>Shipping Cost for same batch:</strong>
+                        <p id="batchShippingCostInfo" style="margin: 10px 0;"></p>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="updateBatchShippingCost">
+                            <label class="form-check-label" for="updateBatchShippingCost">
+                                Update shipping cost for other materials in same batch
+                            </label>
+                        </div>
+                        <div id="updateShippingCostContainer" style="display: none; margin-top: 10px;">
+                            <label class="form-label">New Shipping Cost</label>
+                            <input type="number" class="form-control" id="newBatchShippingCost" placeholder="0" step="0.01" min="0">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmReturnBtn">Confirm Return</button>
                 </div>
             </div>
         </div>
@@ -1369,8 +1442,27 @@
                 // 删除按钮 - 根据表类型传递不同的主键
                 const deleteKey = isOpenTable ? poLine : id;
                 const deleteKeyDisplay = isOpenTable ? poLine : id;
-                rowHtml += `<button class="delete-btn" onclick="deleteRowRecord('${deleteKey}', '${currentTable}')" title="删除此记录">✕</button>
-                </td>`;
+                rowHtml += `<button class="delete-btn" onclick="deleteRowRecord('${deleteKey}', '${currentTable}')" title="删除此记录">✕</button>`;
+                
+                // 退货按钮 (仅在closed表显示)
+                const isClosedTable = (currentTable === 'wf_closed' || currentTable === 'non_wf_closed');
+                if (isClosedTable) {
+                    const shipmentQty = parseFloat(row.qty) || 0;
+                    const poLineStr = String(poLine).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+                    // 更完善的转义：处理换行符、引号等特殊字符
+                    const descriptionStr = String(row.description || '')
+                        .replace(/\\/g, '\\\\\\\\')
+                        .replace(/"/g, '\\"')
+                        .replace(/'/g, "\\'") 
+                        .replace(/\n/g, ' ')
+                        .replace(/\r/g, '')
+                        .substring(0, 100);
+                    // 确保 recordId 是有效的 id 值（会自动转换为字符串）
+                    const recordIdValue = id && id !== '' ? String(id) : String(rowIndex);
+                    rowHtml += `<button class="btn btn-sm return-shipment-btn" onclick="openReturnShipmentModal('${poLineStr}', '${descriptionStr}', ${shipmentQty}, '${currentTable}', '${recordIdValue}')" title="退货" style="padding: 4px 6px; font-size: 12px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">↩</button>`;
+                }
+                
+                rowHtml += `</td>`;
                 // 再添加数据列
                 columnNames.forEach(col => {
                     const value = row[col] !== null ? row[col] : '';
@@ -2169,12 +2261,22 @@
                 }
             }
             
-            // 获取主键值（假设为pn字段）
+            // 确定主键：对于closed表使用id，对于open表使用po_line
             const row = tableData[rowIndex];
-            const pn = row.pn || row.PN;
+            const isClosedTable = (currentTable === 'wf_closed' || currentTable === 'non_wf_closed');
+            const isOpenTable = (currentTable === 'wf_open' || currentTable === 'non_wf_open');
             
-            if (!pn) {
-                showStatus('Cannot save: missing primary key value(pn)', 'error');
+            let primaryKeyValue;
+            if (isClosedTable) {
+                primaryKeyValue = row.id;
+            } else if (isOpenTable) {
+                primaryKeyValue = row.po_line;
+            } else {
+                primaryKeyValue = row.pn || row.PN;
+            }
+            
+            if (!primaryKeyValue) {
+                showStatus('Cannot save: missing primary key value', 'error');
                 return;
             }
             
@@ -2188,7 +2290,7 @@
             }
             
             // 发送更新请求
-            authenticatedFetch(`/api/tables/${currentTable}/${pn}`, {
+            authenticatedFetch(`/api/tables/${currentTable}/${primaryKeyValue}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2246,12 +2348,21 @@
                 tableData[rowIndex]['total_price'] = (qty * netPrice).toFixed(2);
             }
             
-            // 获取主键值（假设为pn字段）
-            const row = tableData[rowIndex];
-            const pn = row.pn || row.PN;
+            // 确定主键：对于closed表使用id，对于open表使用po_line
+            const isClosedTable = (currentTable === 'wf_closed' || currentTable === 'non_wf_closed');
+            const isOpenTable = (currentTable === 'wf_open' || currentTable === 'non_wf_open');
             
-            if (!pn) {
-                showStatus('Cannot save: missing primary key value(pn)', 'error');
+            let primaryKeyValue;
+            if (isClosedTable) {
+                primaryKeyValue = row.id;
+            } else if (isOpenTable) {
+                primaryKeyValue = row.po_line;
+            } else {
+                primaryKeyValue = row.pn || row.PN;
+            }
+            
+            if (!primaryKeyValue) {
+                showStatus('Cannot save: missing primary key value', 'error');
                 return;
             }
             
@@ -2265,7 +2376,7 @@
             }
             
             // 发送更新请求
-            authenticatedFetch(`/api/tables/${currentTable}/${pn}`, {
+            authenticatedFetch(`/api/tables/${currentTable}/${primaryKeyValue}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2300,7 +2411,17 @@
         function saveCellValueToDatabase(rowIndex, columnName, value) {
             // 获取要更新的数据
             const rowData = tableData[rowIndex];
-            const pn = rowData.pn;
+            const isClosedTable = (currentTable === 'wf_closed' || currentTable === 'non_wf_closed');
+            const isOpenTable = (currentTable === 'wf_open' || currentTable === 'non_wf_open');
+            
+            let primaryKeyValue;
+            if (isClosedTable) {
+                primaryKeyValue = rowData.id;
+            } else if (isOpenTable) {
+                primaryKeyValue = rowData.po_line;
+            } else {
+                primaryKeyValue = rowData.pn;
+            }
             
             // 构造更新数据
             const updates = {};
@@ -2312,7 +2433,7 @@
             }
             
             // 发送更新请求
-            authenticatedFetch(`/api/tables/${currentTable}/${pn}`, {
+            authenticatedFetch(`/api/tables/${currentTable}/${primaryKeyValue}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2899,7 +3020,178 @@
             });
         }
         
-        // Update record count
+        // 打开退货Modal
+        function openReturnShipmentModal(poLine, description, shipmentQty, closedTable, recordId) {
+            try {
+                // 转换recordId为数字，以正确匹配数据库中id
+                const recordIdNum = parseInt(recordId);
+                
+                console.log('[DEBUG] openReturnShipmentModal called with recordId:', recordId, 'parsed:', recordIdNum);
+                
+                const currentRow = tableData.find(row => row.id === recordIdNum);
+                if (!currentRow) {
+                    console.error('[ERROR] Unable to find record with id:', recordIdNum);
+                    console.log('[DEBUG] tableData length:', tableData.length, 'first few ids:', tableData.slice(0, 5).map(r => r.id));
+                    showStatus('Unable to get record information', 'error');
+                    return;
+                }
+                
+                // 设置退货Modal的值
+                document.getElementById('returnPoLine').value = poLine;
+                document.getElementById('returnDescription').value = description;
+                document.getElementById('returnQty').value = shipmentQty;  // 默认填入最大数量
+                document.getElementById('returnMaxQty').value = shipmentQty;
+                document.getElementById('newBatchShippingCost').value = currentRow.shipping_cost || '';
+                document.getElementById('updateBatchShippingCost').checked = false;
+                document.getElementById('updateShippingCostContainer').style.display = 'none';
+                
+                // 为Modal不名改变量，供退货使用
+                document.getElementById('returnShipmentModal').dataset.closedTable = closedTable;
+                document.getElementById('returnShipmentModal').dataset.recordId = recordId;
+                document.getElementById('returnShipmentModal').dataset.shipmentBatchNo = currentRow.shipment_batch_no || '';
+                
+                console.log('[DEBUG] Set modal dataset:', {
+                    closedTable: closedTable,
+                    recordId: recordId,
+                    shipmentBatchNo: currentRow.shipment_batch_no
+                });
+                
+                // 自动加载同一批发货号的其他物料
+                const shipmentBatchNo = currentRow.shipment_batch_no;
+                if (shipmentBatchNo) {
+                    const batchItems = tableData.filter(row => row.shipment_batch_no === shipmentBatchNo && row.id !== recordId);
+                    let infoText = `Shipping Cost: $${currentRow.shipping_cost || 'N/A'}`;
+                    if (batchItems.length > 0) {
+                        infoText += `<br><br><strong>Other materials in this batch:</strong><ul>`;
+                        batchItems.forEach(item => {
+                            infoText += `<li>${item.po_line}: ${item.description} (Qty: ${item.qty}, Cost: $${item.shipping_cost})</li>`;
+                        });
+                        infoText += `</ul>`;
+                    }
+                    document.getElementById('batchShippingCostInfo').innerHTML = infoText;
+                } else {
+                    document.getElementById('batchShippingCostInfo').innerHTML = `Shipping Cost: $${currentRow.shipping_cost || 'N/A'}`;
+                }
+                
+                // 显示 Modal
+                const modalElement = document.getElementById('returnShipmentModal');
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+            } catch (error) {
+                console.error('[ERROR] Exception in openReturnShipmentModal:', error);
+                showStatus('Error opening return modal: ' + error.message, 'error');
+            }
+        }
+        
+        // 确认退货
+        function confirmReturnShipment() {
+            const returnQtyStr = document.getElementById('returnQty').value.trim();
+            const maxQty = parseFloat(document.getElementById('returnMaxQty').value) || 0;
+            const closedTable = document.getElementById('returnShipmentModal').dataset.closedTable;
+            const recordId = document.getElementById('returnShipmentModal').dataset.recordId; // 会以一个字符串的形式return
+            const shipmentBatchNo = document.getElementById('returnShipmentModal').dataset.shipmentBatchNo;
+            const shouldUpdateBatchShippingCost = document.getElementById('updateBatchShippingCost').checked;
+            
+            console.log('[DEBUG] confirmReturnShipment called with:', {
+                closedTable: closedTable,
+                recordId: recordId,
+                shipmentBatchNo: shipmentBatchNo,
+                shouldUpdateBatchShippingCost: shouldUpdateBatchShippingCost
+            });
+            
+            // 验证退货数量
+            if (!returnQtyStr || returnQtyStr === '') {
+                showStatus('Please enter return quantity', 'error');
+                return;
+            }
+            
+            const returnQty = parseFloat(returnQtyStr);
+            if (isNaN(returnQty) || returnQty <= 0) {
+                showStatus('Return quantity must be greater than 0', 'error');
+                return;
+            }
+            
+            if (returnQty > maxQty) {
+                showStatus(`Return quantity cannot exceed available quantity (${maxQty})`, 'error');
+                return;
+            }
+            
+            let newShippingCost = null;
+            if (shouldUpdateBatchShippingCost) {
+                const newShippingCostStr = document.getElementById('newBatchShippingCost').value.trim();
+                if (!newShippingCostStr) {
+                    showStatus('Please enter new shipping cost for batch', 'error');
+                    return;
+                }
+                newShippingCost = parseFloat(newShippingCostStr);
+                if (isNaN(newShippingCost) || newShippingCost < 0) {
+                    showStatus('Shipping cost must be a valid number >= 0', 'error');
+                    return;
+                }
+            }
+            
+            // 发送退货请求
+            showStatus('Processing return shipment...', 'loading');
+            
+            const userEmail = localStorage.getItem('userEmail') || 'unknown@example.com';
+            
+            const requestData = {
+                closed_table: closedTable,
+                record_id: recordId,
+                return_qty: returnQty,
+                new_shipping_cost: newShippingCost,
+                shipment_batch_no: shipmentBatchNo
+            };
+            
+            console.log('[DEBUG] Sending return shipment request:', requestData);
+            
+            authenticatedFetch('/api/shipment/return', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-User-Email': userEmail
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showStatus('Return shipment processed successfully!', 'success');
+                    
+                    // 关闭Modal
+                    const modalElement = document.getElementById('returnShipmentModal');
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) {
+                        modal.hide();
+                    }
+                    
+                    // 重新加载表数据
+                    setTimeout(() => loadTableData(), 800);
+                } else {
+                    showStatus(`Return failed: ${data.message}`, 'error');
+                }
+            })
+            .catch(error => {
+                showStatus(`Return failed: ${error}`, 'error');
+            });
+        }
+        
+        // 退货模态框中更新运费Checkbox的事件监听
+        document.addEventListener('DOMContentLoaded', function() {
+            const updateBatchShippingCostCheckbox = document.getElementById('updateBatchShippingCost');
+            if (updateBatchShippingCostCheckbox) {
+                updateBatchShippingCostCheckbox.addEventListener('change', function() {
+                    const container = document.getElementById('updateShippingCostContainer');
+                    container.style.display = this.checked ? 'block' : 'none';
+                });
+            }
+            
+            const confirmReturnBtn = document.getElementById('confirmReturnBtn');
+            if (confirmReturnBtn) {
+                confirmReturnBtn.addEventListener('click', confirmReturnShipment);
+            }
+        });
+        
         function updateRecordCount() {
             const countElement = document.getElementById('recordCount');
             const startIndex = (currentPage - 1) * itemsPerPage + 1;
