@@ -184,9 +184,10 @@ class ShipmentController:
             print(f"[DEBUG] 'shipment_batch_no' in closed_columns: {'shipment_batch_no' in closed_columns}")
             
             # 过滤closed_record，只保留closed表中存在的列
+            # 且排除 update_at 字段，让 PostgreSQL 使用 DEFAULT CURRENT_TIMESTAMP
             filtered_closed_record = {}
             for key, value in closed_record.items():
-                if key in closed_columns:
+                if key in closed_columns and key != 'update_at':  # 排除 update_at
                     filtered_closed_record[key] = value
             
             print(f"[DEBUG] filtered_closed_record keys: {list(filtered_closed_record.keys())}")
@@ -238,17 +239,22 @@ class ShipmentController:
                 operation_type = 'full_shipment'
             else:
                 # 部分发货：更新open表qty和total_price
+                # 同时更新 update_at 时间戳
                 new_qty = max_qty - shipment_qty
                 net_price = float(open_record.get('net_price') or 0)
                 new_total_price = round(new_qty * net_price, 2) if net_price > 0 else 0
                 
                 if po_line:
-                    update_open_query = sql.SQL("UPDATE purchase_orders.{} SET qty = %s, total_price = %s WHERE po_line = %s").format(
+                    update_open_query = sql.SQL(
+                        "UPDATE purchase_orders.{} SET qty = %s, total_price = %s, update_at = CURRENT_TIMESTAMP WHERE po_line = %s"
+                    ).format(
                         sql.Identifier(source_table)
                     )
                     cursor.execute(update_open_query, (new_qty, new_total_price, po_line))
                 else:
-                    update_open_query = sql.SQL("UPDATE purchase_orders.{} SET qty = %s, total_price = %s WHERE po = %s AND pn = %s").format(
+                    update_open_query = sql.SQL(
+                        "UPDATE purchase_orders.{} SET qty = %s, total_price = %s, update_at = CURRENT_TIMESTAMP WHERE po = %s AND pn = %s"
+                    ).format(
                         sql.Identifier(source_table)
                     )
                     cursor.execute(update_open_query, (new_qty, new_total_price, po, pn))
@@ -361,6 +367,7 @@ class ShipmentController:
             
             if open_record:
                 # 有效表中存在该记录，更新qty和total_price
+                # 同时更新 update_at 时间戳
                 colnames_open = [desc[0] for desc in cursor.description]
                 open_record_dict = dict(zip(colnames_open, open_record))
                 
@@ -369,7 +376,9 @@ class ShipmentController:
                 net_price = float(open_record_dict.get('net_price') or 0)
                 new_total_price = round(new_open_qty * net_price, 2) if net_price > 0 else 0
                 
-                update_open_query = sql.SQL("UPDATE purchase_orders.{} SET qty = %s, total_price = %s WHERE po_line = %s").format(
+                update_open_query = sql.SQL(
+                    "UPDATE purchase_orders.{} SET qty = %s, total_price = %s, update_at = CURRENT_TIMESTAMP WHERE po_line = %s"
+                ).format(
                     sql.Identifier(source_table)
                 )
                 cursor.execute(update_open_query, (new_open_qty, new_total_price, po_line))
@@ -389,7 +398,7 @@ class ShipmentController:
                 # 从有效表记录增到有效表中，但下流数量为退货数量
                 open_insert_record = {}
                 for key, value in closed_record_dict.items():
-                    if key in open_columns and key != 'shipment_batch_no':  # 有效表不需要shipment_batch_no
+                    if key in open_columns and key != 'shipment_batch_no' and key != 'update_at':
                         if key == 'qty':
                             open_insert_record[key] = return_qty
                         elif key == 'total_price':
@@ -427,8 +436,9 @@ class ShipmentController:
                 
                 if batch_no:
                     # 更新所有相同batch的记录（除了要删除的当前记录）
+                    # 同时更新 update_at 时间戳
                     update_shipping_cost_query = sql.SQL(
-                        "UPDATE purchase_orders.{} SET shipping_cost = %s WHERE shipment_batch_no = %s AND id != %s"
+                        "UPDATE purchase_orders.{} SET shipping_cost = %s, update_at = CURRENT_TIMESTAMP WHERE shipment_batch_no = %s AND id != %s"
                     ).format(sql.Identifier(closed_table))
                     cursor.execute(update_shipping_cost_query, (new_shipping_cost, batch_no, record_id))
                     rows_affected = cursor.rowcount
@@ -437,7 +447,7 @@ class ShipmentController:
                     # 如果是部分退货，也应该更新当前记录的运费
                     if return_qty < closed_qty:
                         update_current_cost_query = sql.SQL(
-                            "UPDATE purchase_orders.{} SET shipping_cost = %s WHERE id = %s"
+                            "UPDATE purchase_orders.{} SET shipping_cost = %s, update_at = CURRENT_TIMESTAMP WHERE id = %s"
                         ).format(sql.Identifier(closed_table))
                         cursor.execute(update_current_cost_query, (new_shipping_cost, record_id))
                         print(f"  - Current record shipping cost also updated (partial return)")
@@ -455,11 +465,14 @@ class ShipmentController:
                 cursor.execute(delete_closed_query, (record_id,))
             else:
                 # 部分退货：更新closed表的qty和total_price (using id as primary key)
+                # 同时更新 update_at 时间戳
                 new_closed_qty = closed_qty - return_qty
                 net_price = float(closed_record_dict.get('net_price') or 0)
                 new_closed_total_price = round(new_closed_qty * net_price, 2) if net_price > 0 else 0
                 
-                update_closed_query = sql.SQL("UPDATE purchase_orders.{} SET qty = %s, total_price = %s WHERE id = %s").format(
+                update_closed_query = sql.SQL(
+                    "UPDATE purchase_orders.{} SET qty = %s, total_price = %s, update_at = CURRENT_TIMESTAMP WHERE id = %s"
+                ).format(
                     sql.Identifier(closed_table)
                 )
                 cursor.execute(update_closed_query, (new_closed_qty, new_closed_total_price, record_id))

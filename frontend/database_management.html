@@ -1253,6 +1253,7 @@
         // 获取表的列名
         function getColumnNames(tableName) {
             // 根据表名返回对应的列顺序
+            // 注意: id 和 update_at 字段应该被排除需不显示
             const tableColumns = {
                 'wf_open': ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date_wf', 'eta_wfsz', 'wfsz_shipping_mode', 'comment', 'po_placed_date', 'purchaser', 'record_no', 'shipping_cost', 'tracking_no', 'so_number', 'latest_departure_date', 'chinese_name', 'unit', 'company'],
                 'wf_closed': ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date_wf', 'eta_wfsz', 'wfsz_shipping_mode', 'comment', 'po_placed_date', 'purchaser', 'record_no', 'shipping_cost', 'tracking_no', 'so_number', 'chinese_name', 'unit', 'company'],
@@ -1290,9 +1291,21 @@
                 .then(data => {
                     if (data.success) {
                         tableData = data.data;
+                        // 确保数据按update_at降序排列（最新更新的数据优先）
+                        // 检查所有记录中是否有任何记录有update_at字段
+                        const hasUpdateAtField = tableData && tableData.length > 0 && tableData.some(row => row.update_at);
+                        if (hasUpdateAtField) {
+                            tableData.sort((a, b) => {
+                                const dateA = a.update_at ? new Date(a.update_at).getTime() : 0;
+                                const dateB = b.update_at ? new Date(b.update_at).getTime() : 0;
+                                console.log(`排序: ${a.po_line || 'unknown'} (${a.update_at}) = ${dateA}, ${b.po_line || 'unknown'} (${b.update_at}) = ${dateB}, 结果=${dateB - dateA}`);
+                                return dateB - dateA; // 按更新时间降序
+                            });
+                        }
                         filteredData = [...tableData]; // 初始化过滤数据
                         // 根据表名获取正确的列顺序
                         columnNames = getColumnNames(currentTable);
+                        // 同时保持originalData也是排序好的（重要！）
                         originalData = JSON.parse(JSON.stringify(tableData));
                         // 重置到第一页
                         currentPage = 1;
@@ -1865,6 +1878,16 @@
             
             console.log(`最终结果: ${filteredData.length}`);
             
+            // 过滤完成后，保持按update_at降序排列（最新数据在最前面）
+            const hasUpdateAtField = filteredData.length > 0 && filteredData.some(row => row.update_at);
+            if (hasUpdateAtField) {
+                filteredData.sort((a, b) => {
+                    const dateA = a.update_at ? new Date(a.update_at).getTime() : 0;
+                    const dateB = b.update_at ? new Date(b.update_at).getTime() : 0;
+                    return dateB - dateA;
+                });
+            }
+            
             // 重置到第一页并重新渲染
             currentPage = 1;
             renderTableBody();
@@ -2003,6 +2026,16 @@
             
             // 重置过滤数据为原始数据
             filteredData = originalData.map(row => ({ ...row }));
+            
+            // 保持按update_at降序排列
+            const hasUpdateAtField = filteredData.length > 0 && filteredData.some(row => row.update_at);
+            if (hasUpdateAtField) {
+                filteredData.sort((a, b) => {
+                    const dateA = a.update_at ? new Date(a.update_at).getTime() : 0;
+                    const dateB = b.update_at ? new Date(b.update_at).getTime() : 0;
+                    return dateB - dateA;
+                });
+            }
             
             // 重置到第一页并重新渲染
             currentPage = 1;

@@ -88,6 +88,7 @@ proto-sap-latest.tar
 __pycache__/
 .cache/
 proto-sap-docker/images
+proto*.tar
 
 # Node (如果有前端构建)
 node_modules/

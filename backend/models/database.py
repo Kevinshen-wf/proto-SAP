@@ -87,6 +87,34 @@ class DatabaseManager:
                     add_unit_query = f"ALTER TABLE purchase_orders.{table_name} ADD COLUMN unit VARCHAR(20)"
                     cursor.execute(add_unit_query)
             
+            # 注意：update_at 列应在数据库初始化时就已添加
+            # 但为了确保部署到 Portainer 时也能正确初始化，这里添加检查和创建逻辑
+            try:
+                # 检查 update_at 列是否存在
+                check_update_at_query = """
+                    SELECT EXISTS(
+                        SELECT 1 
+                        FROM information_schema.columns 
+                        WHERE table_schema = 'purchase_orders' 
+                        AND table_name = %s 
+                        AND column_name = 'update_at'
+                    )
+                """
+                cursor.execute(check_update_at_query, (table_name,))
+                has_update_at = cursor.fetchone()[0]
+                
+                if not has_update_at:
+                    # 仅在列不存在时添加
+                    add_update_at_query = f"ALTER TABLE purchase_orders.{table_name} ADD COLUMN update_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+                    try:
+                        cursor.execute(add_update_at_query)
+                        conn.commit()
+                    except Exception as e:
+                        # 列可能已被其他进程创建，继续执行
+                        print(f"添加 update_at 列时：{e}")
+            except Exception as e:
+                print(f"检查 update_at 列时出错：{e}")
+            
             # 对于 closed 表，添加 id 列和 shipment_batch_no 列（如果不存在）
             if table_name in ['wf_closed', 'non_wf_closed']:
                 # 检查 id 列是否存在
@@ -132,31 +160,37 @@ class DatabaseManager:
                 )
                 cursor.execute(query)
             else:
-                # 默认查询 - 按id下降排序，最新插入/修改的数据氾先
-                # 检查表是否有id字段
-                check_id_query = """
-                    SELECT EXISTS(
-                        SELECT 1 
-                        FROM information_schema.columns 
-                        WHERE table_schema = 'purchase_orders' 
-                        AND table_name = %s 
-                        AND column_name = 'id'
-                    )
-                """
-                cursor.execute(check_id_query, (table_name,))
-                has_id = cursor.fetchone()[0]
-                
-                if has_id:
-                    # 有id字段，按id下降排序
+                # 默认查询
+                # closed表按id下降排序，open表按po_line下降排序
+                if table_name in ['wf_closed', 'non_wf_closed']:
                     query = sql.SQL("SELECT * FROM purchase_orders.{} ORDER BY id DESC").format(
                         sql.Identifier(table_name)
                     )
                 else:
-                    # 没有id字段，按po_line下降排序（默认顺序）
-                    query = sql.SQL("SELECT * FROM purchase_orders.{}").format(
-                        sql.Identifier(table_name)
-                    )
-                
+                    # open表使用po_line排序，或者如果重需按update_at排序也可以
+                    # 先检查update_at是否存在
+                    check_update_at_query = """
+                        SELECT EXISTS(
+                            SELECT 1 
+                            FROM information_schema.columns 
+                            WHERE table_schema = 'purchase_orders' 
+                            AND table_name = %s 
+                            AND column_name = 'update_at'
+                        )
+                    """
+                    cursor.execute(check_update_at_query, (table_name,))
+                    has_update_at = cursor.fetchone()[0]
+                    
+                    if has_update_at:
+                        # 有update_at字段，按update_at下降排序
+                        query = sql.SQL("SELECT * FROM purchase_orders.{} ORDER BY update_at DESC").format(
+                            sql.Identifier(table_name)
+                        )
+                    else:
+                        # 不有update_at字段，按po_line下降排序（备选）
+                        query = sql.SQL("SELECT * FROM purchase_orders.{} ORDER BY po_line DESC").format(
+                            sql.Identifier(table_name)
+                        )
                 cursor.execute(query)
             
             records = cursor.fetchall()
@@ -280,6 +314,10 @@ class DatabaseManager:
             # 构建更新查询
             set_clauses = []
             values = []
+            
+            # 自动添加 update_at = CURRENT_TIMESTAMP
+            set_clauses.append(sql.SQL("update_at = CURRENT_TIMESTAMP"))
+            
             for column_name, new_value in updates.items():
                 set_clauses.append(sql.SQL("{} = %s").format(sql.Identifier(column_name)))
                 # 处理日期字段的特殊格式
@@ -476,10 +514,11 @@ class DatabaseManager:
                 columns = list(cleaned_data.keys())
                 values = list(cleaned_data.values())
                 
-                # 构建ON CONFLICT更新的SET子句
+                # 构建 ON CONFLICT 更新的 SET 子句
+                # 注意: update_at 不应该在 ON CONFLICT 中更新（保持原来的值）
                 update_fields = []
                 for col in columns:
-                    if col != 'po_line':  # 主键字段不更新
+                    if col != 'po_line' and col != 'update_at':  # 主锫字段和 update_at 字段不更新
                         update_fields.append(f"{col} = EXCLUDED.{col}")
                 
                 insert_query = sql.SQL("""
@@ -493,7 +532,8 @@ class DatabaseManager:
                     sql.SQL(", ".join(update_fields) if update_fields else "po = EXCLUDED.po")
                 )
             else:
-                # 其他表使用默认的插入方式
+                # 其他表使用默认的插入方式（不做 ON CONFLICT 处理）
+                # update_at 字段由 PostgreSQL DEFAULT CURRENT_TIMESTAMP 自动设置
                 columns = list(cleaned_data.keys())
                 values = list(cleaned_data.values())
                 placeholders = sql.SQL(", ").join(sql.Placeholder() * len(columns))
