@@ -198,10 +198,22 @@ class PDFImportProcessor:
                             columns = list(cleaned_data.keys())
                             values = list(cleaned_data.values())
                             
-                            # 构建ON CONFLICT更新的SET子句
+                            # 定义 PDF 可提取的列（只有这些列会在冲突时被覆盖）
+                            # WF OPEN 表: PO PN LINE PO/LINE description qty net_price total_price req_date_wf placed_date purchaser
+                            # Non-wf OPEN 表: PO PN LINE PO/LINE description qty net_price total_price req_date placed_date
+                            pdf_extractable_columns = {
+                                'wf_open': {'po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date_wf', 'po_placed_date', 'purchaser'},
+                                'non_wf_open': {'po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date', 'po_placed_date'}
+                            }
+                                                        
+                            # 获取当前表的 PDF 可提取列集合
+                            pdf_cols = pdf_extractable_columns.get(table_name, set(columns))
+                                                        
+                            # 构建 ON CONFLICT 更新的 SET 子句
+                            # 只覆盖 PDF 提取的列，保留其他列的原值
                             update_fields = []
                             for col in columns:
-                                if col != 'po_line':  # 主键字段不更新
+                                if col != 'po_line' and col in pdf_cols:  # 只更新 PDF 列
                                     update_fields.append(f"{col} = EXCLUDED.{col}")
                             
                             insert_query = sql.SQL("""
