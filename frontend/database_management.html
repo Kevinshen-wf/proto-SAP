@@ -478,6 +478,17 @@
             font-size: 0.85rem !important;
         }
         
+        /* shipping_cost 列不能有省略号，需要完整显示 shipping cost 值（例如 s:€100.00） */
+        .table td.shipping-cost-cell {
+            white-space: normal !important;
+            word-wrap: break-word !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            min-width: 110px !important;
+            vertical-align: middle !important;
+            padding: 6px 4px !important;
+        }
+        
         /* 响应式：根据屏幕大小调整 Description 和 Comment 的最大宽度 */
         @media (min-width: 1600px) {
             .table td.description-cell,
@@ -677,13 +688,11 @@
         .action-cell {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 4px;
             white-space: nowrap;
-        }
-        
-        td:first-child {
-            width: 100px;
-            min-width: 100px;
+            width: 130px !important;
+            min-width: 130px !important;
+            max-width: 130px !important;
         }
         
         .shipment-checkbox {
@@ -821,10 +830,13 @@
             </div>
         </div>
         
-        <!-- 全局发货按钮区域 (仅在Open表显示) -->
+        <!-- 全局发货按鑒区域 (仅在Open表显示) -->
         <div id="shipmentButtonArea" class="shipment-button-area" style="display: none;">
             <button class="btn btn-warning me-2" onclick="openGlobalShipmentModal()" id="globalShipmentBtn">
                 📦 Shipment
+            </button>
+            <button class="btn btn-info me-2" onclick="openBatchUpdateModal()" id="batchUpdateBtn">
+                ✍️ Batch Update
             </button>
             <div class="selected-items-tabs" id="selectedItemsDisplay">
                 <!-- 已选项目将显示在这里 -->
@@ -984,6 +996,30 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-primary" id="confirmReturnBtn">Confirm Return</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批量修改模态框 -->
+    <div class="modal fade" id="batchUpdateModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Batch Update</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <strong id="batchUpdateCount">0</strong> records selected
+                    </div>
+                    <div id="batchUpdateFields" class="row g-3">
+                        <!-- Fields will be dynamically added here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmBatchUpdateBtn">Confirm Update</button>
                 </div>
             </div>
         </div>
@@ -1210,6 +1246,8 @@
                     // 其他错误继续抛出
                     throw error;
                 });
+
+                
         }
         
         // 获取表的列名
@@ -1229,9 +1267,12 @@
         // 获取列的显示名称
         function getColumnDisplayName(columnName) {
             const displayNameMap = {
-                'wfsz_shipping_mode': 'Ship Mode',
-                'so_number': 'SO No',
-                'latest_departure_date': 'Dep Date',
+                'wfsz_shipping_mode': 'ship_mode',
+                'shipping_mode': 'ship_mode',
+                'so_number': 'so_no',
+                'latest_departure_date': 'dep_date',
+                'po_placed_date': 'placed_date',
+                'shipping_cost': 'ship_cost'
             };
             
             return displayNameMap[columnName] || columnName;
@@ -1298,25 +1339,33 @@
                 'company': 110,
                 'purchaser': 110,
                 'record_no': 95,
-                'shipping_cost': 100,
+                'shipping_cost': 110,
+                'ship_cost': 110,
                 'tracking_no': 110,
                 'eta_wfsz': 110,
                 'req_date_wf': 100,
                 'req_date': 100,
-                'po_placed_date': 110,
-                'wfsz_shipping_mode': 90,
-                'so_number': 80,
+                'po_placed_date': 100,
+                'placed_date': 100,
+                'wfsz_shipping_mode': 70,
+                'shipping_mode': 70,
+                'ship_mode': 70,
+                'so_number': 70,
+                'so_no': 70,
                 'latest_departure_date': 90,
-                'Actions': 70
+                'dep_date': 90,
+                'Actions': 130
             };
             
             // 遍历表头获取列名
             headerCells.forEach((th, colIndex) => {
                 const columnName = th.textContent.trim();
                 
-                // Actions列单独处理
+                // Actions列单单独处理
                 if (columnName === 'Actions') {
-                    const actionWidth = 70;
+                    // 根据表类型动态设置宽度: open表不需要退货按钮, 所以宽度较小; closed表有退货按钮, 需要更大的宽度
+                    const isOpen = (currentTable === 'wf_open' || currentTable === 'non_wf_open');
+                    const actionWidth = isOpen ? 65 : 140;
                     th.style.width = actionWidth + 'px';
                     th.style.minWidth = actionWidth + 'px';
                     th.style.maxWidth = actionWidth + 'px';
@@ -1363,9 +1412,12 @@
                 cells.forEach((cell, colIndex) => {
                     // Actions列（第一列）
                     if (colIndex === 0) {
-                        cell.style.width = '70px';
-                        cell.style.minWidth = '70px';
-                        cell.style.maxWidth = '70px';
+                        // 根据表类型设置宽度: open表较小, closed表较大
+                        const isOpen = (currentTable === 'wf_open' || currentTable === 'non_wf_open');
+                        const actionWidth = isOpen ? 65 : 140;
+                        cell.style.width = actionWidth + 'px';
+                        cell.style.minWidth = actionWidth + 'px';
+                        cell.style.maxWidth = actionWidth + 'px';
                         return;
                     }
                     
@@ -1433,11 +1485,9 @@
                 
                 rowHtml += `<td style="text-align: center;" class="action-cell">`;
                 
-                // 复选框 (仅在Open表显示)
-                if (isOpenTable) {
-                    const isChecked = selectedItemsForShipment.has(poLine) ? 'checked' : '';
-                    rowHtml += `<input type="checkbox" class="shipment-checkbox" data-po-line="${poLine}" data-po="${po}" data-pn="${pn}" data-qty="${rowQty}" data-row-index="${rowIndex}" ${isChecked} onchange="handleShipmentCheckboxChange()">`;
-                }
+                // 复选框 (所有表格都显示)
+                const isChecked = selectedItemsForShipment.has(poLine) ? 'checked' : '';
+                rowHtml += `<input type="checkbox" class="shipment-checkbox" data-po-line="${poLine}" data-po="${po}" data-pn="${pn}" data-qty="${rowQty}" data-row-index="${rowIndex}" ${isChecked} onchange="handleShipmentCheckboxChange()" />`;
                 
                 // 删除按钮 - 根据表类型传递不同的主键
                 const deleteKey = isOpenTable ? poLine : id;
@@ -1516,7 +1566,7 @@
                                 }
                                 
                                 if (shouldShowShared) {
-                                    displayValue = 'shared:' + currency + currentShippingCost;
+                                    displayValue = 's:' + currency + currentShippingCost;
                                 } else {
                                     displayValue = currency + currentShippingCost;
                                 }
@@ -1545,6 +1595,8 @@
                         cellClass += ' description-cell';
                     } else if (col === 'comment') {
                         cellClass += ' comment-cell';
+                    } else if (col === 'shipping_cost') {
+                        cellClass += ' shipping-cost-cell';
                     } else if (col === 'po' || col === 'pn' || col === 'eta_wfsz') {
                         cellClass += ' no-ellipsis-cell';
                     }
@@ -2093,8 +2145,8 @@
             } else if (columnName === 'shipping_cost') {
                 // 对于shipping_cost，提取纯数值用于编辑
                 let editValue = currentValue;
-                // 移除 "shared:" 前缀
-                editValue = editValue.replace(/^shared:/, '');
+                // 移除 "s:" 前缀
+                editValue = editValue.replace(/^s:/, '');
                 // 提取纯数值（移除货币符号）
                 editValue = editValue.replace(/[€$]/g, '').trim();
                 inputHtml = `<input type="number" value="${editValue}" step="0.01" 
@@ -2265,10 +2317,10 @@
             if (value === 'null' || value === 'None' || value === 'nan') {
                 tableData[rowIndex][columnName] = null;
             } else {
-                // 对于shipping_cost字段，提取数值部分（去掉shared:前缀和货币符号）
+                // 对于shipping_cost字段，提取数值部分（去掉s:前缀和货币符号）
                 if (columnName === 'shipping_cost') {
-                    // 移除 "shared:" 前缀
-                    let cleanValue = value.replace(/^shared:/, '');
+                    // 移除 "s:" 前缀
+                    let cleanValue = value.replace(/^s:/, '');
                     // 提取纯数值（移除货币符号）
                     cleanValue = cleanValue.replace(/[€$]/g, '').trim();
                     // 如果还有内容，使用清理后的值；否则使用原值
@@ -2315,9 +2367,9 @@
             
             // 准备更新数据
             const updates = {};
-            // 对于shipping_cost，提取纯数值进行更新
+            // 对于shipping_cost字段，提取纯数值进行更新
             if (columnName === 'shipping_cost') {
-                let cleanValue = value.replace(/^shared:/, '').replace(/[€$]/g, '').trim();
+                let cleanValue = value.replace(/^s:/, '').replace(/[€$]/g, '').trim();
                 updates[columnName] = (cleanValue && !isNaN(parseFloat(cleanValue))) ? parseFloat(cleanValue) : null;
             } else {
                 updates[columnName] = value === 'null' || value === 'None' || value === 'nan' ? null : value;
@@ -2733,15 +2785,26 @@
         
         // 更新发货按钮区域显示
         function updateShipmentButtonArea() {
-            const isOpenTable = (currentTable === 'wf_open' || currentTable === 'non_wf_open');
             const buttonArea = document.getElementById('shipmentButtonArea');
+            const globalShipmentBtn = document.getElementById('globalShipmentBtn');
+            const batchUpdateBtn = document.getElementById('batchUpdateBtn');
+            
+            // 判断是否为open表
+            const isOpenTable = (currentTable === 'wf_open' || currentTable === 'non_wf_open');
             
             if (isOpenTable) {
+                // open表：显示发货按钮和批量修改按钮
                 buttonArea.style.display = 'flex';
-                updateSelectedItemsDisplay();
+                globalShipmentBtn.style.display = 'block';
+                batchUpdateBtn.style.display = 'block';
             } else {
-                buttonArea.style.display = 'none';
+                // closed表：隐藏发货按钮，但显示批量修改按钮
+                buttonArea.style.display = 'flex';
+                globalShipmentBtn.style.display = 'none';
+                batchUpdateBtn.style.display = 'block';
             }
+            
+            updateSelectedItemsDisplay();
         }
         
         // 更新已选项目显示
@@ -2783,6 +2846,7 @@
                             po: po,
                             pn: pn,
                             po_line: poLine,
+                            id: originalRow ? (originalRow.id || '') : '',
                             qty: qty,
                             description: originalRow ? (originalRow.description || '') : '',
                             row_index: rowIndex,
@@ -3381,6 +3445,146 @@
             const statusElement = document.getElementById('statusMessage');
             statusElement.style.display = 'none';
         }
+        
+        // 批量修改相关变量
+        let selectedRowsForBatchUpdate = new Set();
+        
+        // 打开批量修改模态框
+        function openBatchUpdateModal() {
+            // 获取已选择的整行
+            const selectedRows = Array.from(selectedItemsForShipment.values());
+            
+            if (selectedRows.length === 0) {
+                showStatus('请先选择要修改的记录', 'warning');
+                return;
+            }
+            
+            selectedRowsForBatchUpdate = new Set(selectedRows.map(r => r.po_line));
+            document.getElementById('batchUpdateCount').textContent = selectedRows.length;
+            
+            // 根据表名提供幸字段
+            const fieldsContainer = document.getElementById('batchUpdateFields');
+            fieldsContainer.innerHTML = '';
+            
+            let batchUpdateFields = [];
+            
+            if (currentTable === 'wf_open' || currentTable === 'wf_closed') {
+                batchUpdateFields = ['eta_wfsz', 'record_no', 'wfsz_shipping_mode', 'shipping_cost', 'tracking_no'];
+            } else if (currentTable === 'non_wf_open' || currentTable === 'non_wf_closed') {
+                batchUpdateFields = ['eta_wfsz', 'record_no', 'shipping_mode', 'shipping_cost', 'tracking_no'];
+            }
+            
+            // 生成输入字段
+            batchUpdateFields.forEach(field => {
+                const fieldLabel = getColumnDisplayName(field);
+                const colDiv = document.createElement('div');
+                colDiv.className = 'col-md-6';
+                
+                if (field === 'eta_wfsz') {
+                    // 日历选择器
+                    colDiv.innerHTML = `
+                        <label class="form-label">${fieldLabel}</label>
+                        <input type="date" class="form-control" id="batch_${field}" data-field="${field}">
+                    `;
+                } else if (field === 'wfsz_shipping_mode' || field === 'shipping_mode') {
+                    // 下拉选择器
+                    colDiv.innerHTML = `
+                        <label class="form-label">${fieldLabel}</label>
+                        <select class="form-select" id="batch_${field}" data-field="${field}">
+                            <option value="">-- No Change --</option>
+                            <option value="sea">Sea</option>
+                            <option value="air">Air</option>
+                            <option value="train">Train</option>
+                            <option value="truck">Truck</option>
+                        </select>
+                    `;
+                } else {
+                    // 文本或数字输入
+                    const inputType = field === 'shipping_cost' ? 'number' : 'text';
+                    const step = field === 'shipping_cost' ? 'step="0.01"' : '';
+                    colDiv.innerHTML = `
+                        <label class="form-label">${fieldLabel}</label>
+                        <input type="${inputType}" class="form-control" id="batch_${field}" data-field="${field}" ${step}>
+                    `;
+                }
+                
+                fieldsContainer.appendChild(colDiv);
+            });
+            
+            // 打开Modal
+            const modal = new bootstrap.Modal(document.getElementById('batchUpdateModal'));
+            modal.show();
+        }
+        
+        // 确认批量修改
+        document.getElementById('confirmBatchUpdateBtn')?.addEventListener('click', function() {
+            const updates = {};
+            let hasChanges = false;
+            
+            // 收集一个每一输入字段的值
+            const inputFields = document.querySelectorAll('#batchUpdateFields [data-field]');
+            inputFields.forEach(field => {
+                const fieldName = field.getAttribute('data-field');
+                const value = field.value;
+                
+                if (value !== '' && value !== null) {
+                    updates[fieldName] = value;
+                    hasChanges = true;
+                }
+            });
+            
+            if (!hasChanges) {
+                showStatus('请至少输入一个修改值', 'warning');
+                return;
+            }
+            
+            // 批量修改整行
+            const selectedRows = Array.from(selectedItemsForShipment.values());
+            const updatePromises = selectedRows.map(row => {
+                // 根据表类型采用不同的主键: closed表使用id，open表使用po_line
+                const isClosedTable = (currentTable === 'wf_closed' || currentTable === 'non_wf_closed');
+                const keyValue = isClosedTable ? row.id : row.po_line;
+                            
+                return authenticatedFetch(`/api/tables/${currentTable}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        key: keyValue,
+                        ...updates
+                    })
+                }).then(response => response.json());
+            });
+            
+            showStatus('正在修改...', 'loading');
+            
+            Promise.all(updatePromises)
+                .then(results => {
+                    const hasError = results.some(r => !r.success);
+                    
+                    if (hasError) {
+                        const errors = results.filter(r => !r.success).map(r => r.message).join('; ');
+                        showStatus(`部分修改失败: ${errors}`, 'error');
+                    } else {
+                        showStatus('全部记录事改成功！', 'success');
+                        
+                        // 关闭Modal
+                        const modalElement = document.getElementById('batchUpdateModal');
+                        const modal = bootstrap.Modal.getInstance(modalElement);
+                        if (modal) {
+                            modal.hide();
+                        }
+                        
+                        // 重新加载表数据
+                        setTimeout(() => loadTableData(), 800);
+                    }
+                })
+                .catch(error => {
+                    showStatus(`修改失败: ${error}`, 'error');
+                });
+        });
     </script>
 </body>
 </html>
+
