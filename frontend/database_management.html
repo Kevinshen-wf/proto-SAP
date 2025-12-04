@@ -1495,14 +1495,27 @@
                             // 为shipping_cost字段，检查是否为共享运费
                             if (col === 'shipping_cost') {
                                 const currentShippingCost = parseFloat(displayValue);
-                                // 统计是否有不同的po_line有相同的shipping_cost
-                                const sameShippingCostCount = paginatedData.filter(r => {
-                                    const rShippingCost = parseFloat(r.shipping_cost || 0);
-                                    return rShippingCost === currentShippingCost && r.shipping_cost !== null && r.shipping_cost !== '';
-                                }).length;
+                                const currentBatchNo = row['shipment_batch_no'];
                                 
-                                // 如果有多条记录共享运费，则添加shared:前缀
-                                if (sameShippingCostCount > 1) {
+                                // 统计同一批次中是否有多条记录共享运费
+                                // 只有当存在shipment_batch_no且有多条记录时，才显示shared:
+                                let shouldShowShared = false;
+                                if (currentBatchNo && currentBatchNo !== null && currentBatchNo !== '') {
+                                    // 统计同一批次中相同shipping_cost的记录数
+                                    const sameBatchAndCostCount = paginatedData.filter(r => {
+                                        const rBatchNo = r['shipment_batch_no'];
+                                        const rShippingCost = parseFloat(r.shipping_cost || 0);
+                                        return rBatchNo === currentBatchNo && 
+                                               rShippingCost === currentShippingCost && 
+                                               r.shipping_cost !== null && 
+                                               r.shipping_cost !== '';
+                                    }).length;
+                                    
+                                    // 同一批次中有多条记录时显示shared:
+                                    shouldShowShared = sameBatchAndCostCount > 1;
+                                }
+                                
+                                if (shouldShowShared) {
                                     displayValue = 'shared:' + currency + currentShippingCost;
                                 } else {
                                     displayValue = currency + currentShippingCost;
@@ -1553,7 +1566,8 @@
                 
                 // 检查计算值是否与总价匹配（考虑浮点数精度问题）
                 if (checkQty > 0 && netPrice > 0 && Math.abs(calculatedTotal - totalPrice) > 0.01) {
-                    const rowElement = document.querySelector(`tr[data-row-index="${rowIndex}"]`);
+                    const actualRowIndex = startIndex + index;
+                    const rowElement = document.querySelector(`tr[data-row-index="${actualRowIndex}"]`);
                     if (rowElement) {
                         rowElement.title = `数据不一致: qty(${checkQty}) * net_price(${netPrice}) = ${calculatedTotal.toFixed(2)} ≠ total_price(${totalPrice})`;
                     }
@@ -2076,6 +2090,15 @@
             } else if (columnName === 'description' || columnName === 'comment') {
                 // 为 description 和 comment 使用多行文本框
                 inputHtml = `<textarea class="form-control" style="min-height: 100px; resize: vertical;">${currentValue}</textarea>`;
+            } else if (columnName === 'shipping_cost') {
+                // 对于shipping_cost，提取纯数值用于编辑
+                let editValue = currentValue;
+                // 移除 "shared:" 前缀
+                editValue = editValue.replace(/^shared:/, '');
+                // 提取纯数值（移除货币符号）
+                editValue = editValue.replace(/[€$]/g, '').trim();
+                inputHtml = `<input type="number" value="${editValue}" step="0.01" 
+                                     data-original-value="${editValue}">`;
             } else {
                 inputHtml = `<input type="text" value="${currentValue}" 
                                      data-original-value="${currentValue}">`;
@@ -2242,7 +2265,17 @@
             if (value === 'null' || value === 'None' || value === 'nan') {
                 tableData[rowIndex][columnName] = null;
             } else {
-                tableData[rowIndex][columnName] = value;
+                // 对于shipping_cost字段，提取数值部分（去掉shared:前缀和货币符号）
+                if (columnName === 'shipping_cost') {
+                    // 移除 "shared:" 前缀
+                    let cleanValue = value.replace(/^shared:/, '');
+                    // 提取纯数值（移除货币符号）
+                    cleanValue = cleanValue.replace(/[€$]/g, '').trim();
+                    // 如果还有内容，使用清理后的值；否则使用原值
+                    tableData[rowIndex][columnName] = cleanValue || value;
+                } else {
+                    tableData[rowIndex][columnName] = value;
+                }
             }
             
             // 检查是否是qty或net_price列，如果是则自动计算total_price
@@ -2282,15 +2315,23 @@
             
             // 准备更新数据
             const updates = {};
-            updates[columnName] = value === 'null' || value === 'None' || value === 'nan' ? null : value;
+            // 对于shipping_cost，提取纯数值进行更新
+            if (columnName === 'shipping_cost') {
+                let cleanValue = value.replace(/^shared:/, '').replace(/[€$]/g, '').trim();
+                updates[columnName] = (cleanValue && !isNaN(parseFloat(cleanValue))) ? parseFloat(cleanValue) : null;
+            } else {
+                updates[columnName] = value === 'null' || value === 'None' || value === 'nan' ? null : value;
+            }
             
             // 如果是qty或net_price，同时发送total_price更新
             if (columnName === 'qty' || columnName === 'net_price') {
                 updates['total_price'] = tableData[rowIndex]['total_price'];
             }
             
+            // 对于包含特殊字符（如 / ）的主键，使用查询参数传递以避免路由改写不匹配
+            updates.key = primaryKeyValue;
             // 发送更新请求
-            authenticatedFetch(`/api/tables/${currentTable}/${primaryKeyValue}`, {
+            authenticatedFetch(`/api/tables/${currentTable}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2308,6 +2349,11 @@
                     // 重新验证该行数据（仅对数值列）
                     if (columnName === 'qty' || columnName === 'net_price' || columnName === 'total_price') {
                         validateRow(rowIndex);
+                    }
+                    
+                    // 对于shipping_cost，重新加载表格以显示正确的格式化值
+                    if (columnName === 'shipping_cost') {
+                        setTimeout(() => loadTableData(), 500);
                     }
                 } else {
                     showStatus(`Save failed: ${data.message}`, 'error');
@@ -2375,8 +2421,10 @@
                 updates['total_price'] = tableData[rowIndex]['total_price'];
             }
             
+            // 对于包含特殊字符（如 / ）的主键，使用查询参数传递以避免路由改写不匹配
+            updates.key = primaryKeyValue;
             // 发送更新请求
-            authenticatedFetch(`/api/tables/${currentTable}/${primaryKeyValue}`, {
+            authenticatedFetch(`/api/tables/${currentTable}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2432,8 +2480,10 @@
                 updates['total_price'] = tableData[rowIndex]['total_price'];
             }
             
+            // 对于包含特殊字符（如 / ）的主键，使用查询参数传递以避免路由改写不匹配
+            updates.key = primaryKeyValue;
             // 发送更新请求
-            authenticatedFetch(`/api/tables/${currentTable}/${primaryKeyValue}`, {
+            authenticatedFetch(`/api/tables/${currentTable}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2520,7 +2570,9 @@
             
             showStatus('Saving data...', 'loading');
             
-            authenticatedFetch(`/api/tables/${currentTable}/${pn}`, {
+            // 在请求体中加入主键值
+            row.key = pn;
+            authenticatedFetch(`/api/tables/${currentTable}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2879,6 +2931,9 @@
             const shippingCostValue = parseFloat(shippingCostStr);
             const itemCount = selectedItemsForShipment.size;
             
+            // 为这一批发货的所有物料生成统一的batch_no，确保同一批发货的物料有相同的shipment_batch_no
+            const shipmentBatchNo = `SHIP-${new Date().toISOString().split('T')[0].replace(/-/g, '')}-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+            
             // 发送一个一个的发货请求
             showStatus('Processing shipment...', 'loading');
             
@@ -2899,7 +2954,8 @@
                         tracking_no: trackingNo,
                         shipping_mode: shippingMode,
                         shipping_cost: shippingCostValue,
-                        is_shared: itemCount > 1
+                        is_shared: itemCount > 1,
+                        shipment_batch_no: shipmentBatchNo
                     })
                 });
             });
@@ -3001,8 +3057,15 @@
             showConfirmModal(`Are you sure you want to delete the record with PN number ${pn}? This action cannot be undone.`, function() {
                 showStatus('Deleting record...', 'loading');
                 
-                authenticatedFetch(`/api/tables/${currentTable}/${pn}`, {
-                    method: 'DELETE'
+                authenticatedFetch(`/api/tables/${currentTable}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        key: pn,
+                        key_field: 'pn'
+                    })
                 })
                 .then(response => response.json())
                 .then(data => {

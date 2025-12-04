@@ -107,12 +107,19 @@ def insert_data(table_name):
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@table_bp.route('/tables/<table_name>/<pn>', methods=['PUT'])
-def update_row(table_name, pn):
+@table_bp.route('/tables/<table_name>', methods=['PUT'])
+def update_row(table_name):
     """更新表中的数据"""
     try:
-        # 获取请求数据
-        updates = request.json
+        # 从查询参数或请求体中获取主键值
+        pn = request.args.get('key') or request.json.get('key')
+        if not pn:
+            return jsonify({'success': False, 'error': '缺少key参数'}), 400
+        
+        # 获取请求数据，并移除key字段（因为key不是要更新的列）
+        updates = request.json.copy() if request.json else {}
+        updates.pop('key', None)  # 移除key参数，避免尝试更新key列
+        
         # 从请求头获取用户邮箱
         user_email = request.headers.get('X-User-Email', 'unknown@example.com')
         result = table_controller.update_row(table_name, pn, updates, user_email)

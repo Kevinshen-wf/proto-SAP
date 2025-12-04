@@ -132,10 +132,31 @@ class DatabaseManager:
                 )
                 cursor.execute(query)
             else:
-                # 默认查询
-                query = sql.SQL("SELECT * FROM purchase_orders.{}").format(
-                    sql.Identifier(table_name)
-                )
+                # 默认查询 - 按id下降排序，最新插入/修改的数据氾先
+                # 检查表是否有id字段
+                check_id_query = """
+                    SELECT EXISTS(
+                        SELECT 1 
+                        FROM information_schema.columns 
+                        WHERE table_schema = 'purchase_orders' 
+                        AND table_name = %s 
+                        AND column_name = 'id'
+                    )
+                """
+                cursor.execute(check_id_query, (table_name,))
+                has_id = cursor.fetchone()[0]
+                
+                if has_id:
+                    # 有id字段，按id下降排序
+                    query = sql.SQL("SELECT * FROM purchase_orders.{} ORDER BY id DESC").format(
+                        sql.Identifier(table_name)
+                    )
+                else:
+                    # 没有id字段，按po_line下降排序（默认顺序）
+                    query = sql.SQL("SELECT * FROM purchase_orders.{}").format(
+                        sql.Identifier(table_name)
+                    )
+                
                 cursor.execute(query)
             
             records = cursor.fetchall()
@@ -224,18 +245,27 @@ class DatabaseManager:
             primary_key_field = 'id'  # 默认使用新的自增主键
             primary_key_value = pn
             
-            # 对于wf_open和non_wf_open表，我们需要根据pn查找对应的po_line
+            # 对于wf_open和non_wf_open表，主键是po_line
             if table_name in ['wf_open', 'non_wf_open']:
-                # 先根据pn查找po_line
-                find_po_line_query = f"SELECT po_line FROM purchase_orders.{table_name} WHERE pn = %s LIMIT 1"
+                # 先尝试用po_line查询（前端现在传来的key就是po_line）
+                find_po_line_query = f"SELECT po_line FROM purchase_orders.{table_name} WHERE po_line = %s LIMIT 1"
                 cursor.execute(find_po_line_query, (pn,))
                 result = cursor.fetchone()
                 if result:
+                    # 找到了，说明pn就是po_line
                     primary_key_field = 'po_line'
-                    primary_key_value = result[0]  # 使用找到的po_line作为主键
+                    primary_key_value = pn
                 else:
-                    # 如果找不到对应的po_line，则直接使用pn进行查找
-                    primary_key_field = 'pn'
+                    # 没找到，尝试用pn查找po_line
+                    find_po_line_query = f"SELECT po_line FROM purchase_orders.{table_name} WHERE pn = %s LIMIT 1"
+                    cursor.execute(find_po_line_query, (pn,))
+                    result = cursor.fetchone()
+                    if result:
+                        primary_key_field = 'po_line'
+                        primary_key_value = result[0]  # 使用找到的po_line作为主键
+                    else:
+                        # 如果找不到对应的po_line，则直接使用pn进行查找
+                        primary_key_field = 'pn'
             elif table_name in ['wf_closed', 'non_wf_closed']:
                 # 对于closed表：如果传进来的是整数，可能是id
                 try:

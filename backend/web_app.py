@@ -155,61 +155,8 @@ def set_password():
     """设置密码页面"""
     return render_template('set_password.html')
 
-@app.route('/api/tables/<table_name>', methods=['GET'])
-def get_table_data(table_name):
-    """获取指定表的数据"""
-    try:
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({'success': False, 'error': '数据库连接失败'}), 500
-        
-        cursor = conn.cursor()
-        query = sql.SQL("SELECT * FROM purchase_orders.{}").format(
-            sql.Identifier(table_name)
-        )
-        cursor.execute(query)
-        records = cursor.fetchall()
-        
-        # 获取列名
-        colnames = [desc[0] for desc in cursor.description]
-        
-        # 转换为字典列表
-        data = []
-        for record in records:
-            row_dict = dict(zip(colnames, record))
-            data.append(row_dict)
-        
-        cursor.close()
-        conn.close()
-        
-        return jsonify({
-            'success': True,
-            'columns': colnames,
-            'data': data
-        })
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/api/tables/<table_name>/<pn>', methods=['PUT'])
-def update_row(table_name, pn):
-    """更新表中的数据"""
-    # 重定向到正确的路由处理函数
-    from backend.routes.table_routes import update_row as correct_update_row
-    return correct_update_row(table_name, pn)
-
-@app.route('/api/tables/<table_name>', methods=['POST'])
-def insert_row(table_name):
-    """插入新行数据"""
-    # 重定向到正确的路由处理函数
-    from backend.routes.table_routes import insert_row as correct_insert_row
-    return correct_insert_row(table_name)
-
-@app.route('/api/tables/<table_name>/<pn>', methods=['DELETE'])
-def delete_row(table_name, pn):
-    """删除表中的数据"""
-    # 重定向到正确的路由处理函数
-    from backend.routes.table_routes import delete_row as correct_delete_row
-    return correct_delete_row(table_name, pn)
+# 所有 /api/tables 相关的路由由蓝图处理，不在此处定义
+# 避免路由冲突
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000)
