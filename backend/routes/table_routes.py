@@ -1,9 +1,14 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, send_file
 from backend.controllers.table_controller import TableController
 from backend.pdf_import_processor import PDFImportProcessor
+from backend.report_sync_processor import ReportSyncProcessor
 from backend.operation_logger import operation_logger
+from backend.models.database import get_db_manager
+from backend.utils.jwt_utils import token_required
 import os
 import tempfile
+import io
+import json
 
 # 创建蓝图
 table_bp = Blueprint('table', __name__, url_prefix='/api')
@@ -196,3 +201,83 @@ def get_operation_logs():
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@table_bp.route('/report_sync', methods=['POST'])
+@token_required
+def sync_report():
+    """处理 Excel 报表同步，返回修改后的文件"""
+    tmp_file_path = None
+    try:
+        # 获取上传的文件
+        file = request.files.get('file')
+        
+        if not file:
+            return jsonify({'success': False, 'error': '缺少上传文件'}), 400
+        
+        print(f"[Report Sync] 开始处理文件: {file.filename}")
+        
+        # 创建临时文件
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp_file:
+            file.save(tmp_file.name)
+            tmp_file_path = tmp_file.name
+        
+        print(f"[Report Sync] 临时文件路径: {tmp_file_path}")
+        
+        try:
+            # 获取数据库管理器
+            db_manager = get_db_manager()
+            
+            # 创建处理器并处理 Excel 文件
+            processor = ReportSyncProcessor(db_manager)
+            print(f"[Report Sync] 开始处理 Excel...")
+            result = processor.process_excel_sync(tmp_file_path)
+            print(f"[Report Sync] 处理结果: {result['success']}, 更新行数: {result.get('updated_rows', 0)}")
+            
+            # 如果处理成功，返回修改后的文件
+            if result['success']:
+                # 读取修改后的文件内容
+                print(f"[Report Sync] 读取修改后的文件...")
+                with open(tmp_file_path, 'rb') as f:
+                    file_data = io.BytesIO(f.read())
+                
+                # 返回 Excel 文件
+                file_data.seek(0)
+                response = send_file(
+                    file_data,
+                    mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    as_attachment=True,
+                    download_name='report_synced.xlsx'
+                )
+                
+                # 附带处理结果信息
+                # 使用自定义 header 不会影响文件下载
+                response.headers['X-Report-Sync-Success'] = 'true'
+                response.headers['X-Report-Sync-Updated'] = str(result['updated_rows'])
+                if result.get('errors'):
+                    response.headers['X-Report-Sync-Errors'] = json.dumps(result['errors'])
+                
+                print(f"[Report Sync] 成功返回文件")
+                return response
+            else:
+                print(f"[Report Sync] 处理失败: {result.get('error')}")
+                return jsonify(result), 400
+        except Exception as inner_e:
+            print(f"[Report Sync] 内部异常: {str(inner_e)}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({'success': False, 'error': str(inner_e)}), 500
+    
+    except Exception as e:
+        print(f"[Report Sync] 外部异常: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+    
+    finally:
+        # 应用下減效应后删除临时文件
+        if tmp_file_path and os.path.exists(tmp_file_path):
+            try:
+                os.unlink(tmp_file_path)
+                print(f"[Report Sync] 已删除临时文件: {tmp_file_path}")
+            except Exception as cleanup_e:
+                print(f"[Report Sync] 删除临时文件失败: {str(cleanup_e)}")

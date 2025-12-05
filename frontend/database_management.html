@@ -805,6 +805,9 @@
             <a href="/pdf_import.html" class="btn btn-secondary">
                 📤 PDF Import
             </a>
+            <button class="btn btn-info" onclick="openReportSyncModal()">
+                📋 Report Sync
+            </button>
         </div>
         
         <!-- 状态消息区域 -->
@@ -1025,6 +1028,49 @@
         </div>
     </div>
 
+    <!-- Report Sync 模态框 -->
+    <div class="modal fade" id="reportSyncModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">📋 Report Sync - Excel Upload</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <strong>How to use:</strong>
+                        <ol>
+                            <li>Upload an Excel file with columns: Material, PurchaseOrder, Comments, Reply</li>
+                            <li>The system will find matching records in closed tables</li>
+                            <li>Comments will be appended with tracking numbers</li>
+                            <li>Reply will be calculated from ETA date + 7 days</li>
+                        </ol>
+                    </div>
+                    
+                    <div id="reportSyncUploadArea" class="card">
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="reportSyncFile" class="form-label">Select Excel File (.xlsx)</label>
+                                <input type="file" class="form-control" id="reportSyncFile" accept=".xlsx,.xls">
+                            </div>
+                            <div id="reportSyncMessage" style="display: none;" class="alert"></div>
+                            <div id="reportSyncResults" style="display: none;" class="mt-3">
+                                <h6>Sync Results:</h6>
+                                <div id="reportSyncResultsList"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="reportSyncProcessBtn" onclick="processReportSync()">
+                        📝 Process & Sync
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // 检查用户是否已登录
@@ -1226,6 +1272,11 @@
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
             if (currentUser && currentUser.email) {
                 options.headers['X-User-Email'] = currentUser.email;
+            }
+            
+            // 如果body是FormData，不要手动设置Content-Type（浏览器会自动设置multipart/form-data）
+            if (options.body instanceof FormData && options.headers['Content-Type']) {
+                delete options.headers['Content-Type'];
             }
             
             return fetch(url, options)
@@ -1614,7 +1665,7 @@
                         cellClass += ' no-ellipsis-cell';
                     }
                     
-                    rowHtml += `<td class="${cellClass}" data-column="${col}" data-row="${rowIndex}" ondblclick="editCell(this)">${escapedValue}</td>`;
+                    rowHtml += `<td class="${cellClass}" data-column="${col}" data-row-id="${isClosedTable ? row.id : rowIndex}" data-row="${rowIndex}" ondblclick="editCell(this)"><span>${escapedValue}</span></td>`;
                 });
                 
                 rowHtml += '</tr>';
@@ -2104,7 +2155,7 @@
             document.body.style.overflow = 'auto';
         }
         
-        // 编辑单元格
+        // 编辑单元格 - 改进版：使用id而不是rowIndex
         function editCell(cell) {
             // 如果点击的是输入框，不执行编辑操作
             if (event && event.target.tagName === 'INPUT') {
@@ -2125,7 +2176,21 @@
                 return;
             }
             
-            const rowIndex = parseInt(cell.getAttribute('data-row'));
+            // 改进：对于closed表，使用id；对于其他表，使用rowIndex
+            const isClosedTable = (currentTable === 'wf_closed' || currentTable === 'non_wf_closed');
+            let rowIndex;
+            if (isClosedTable) {
+                const rowId = parseInt(cell.getAttribute('data-row-id'));
+                // 在tableData中查找对应id的索引
+                rowIndex = tableData.findIndex(row => row.id === rowId);
+                if (rowIndex === -1) {
+                    console.error('Cannot find row with id:', rowId);
+                    return;
+                }
+            } else {
+                rowIndex = parseInt(cell.getAttribute('data-row'));
+            }
+            
             const columnName = cell.getAttribute('data-column');
             const currentValue = cell.textContent || '';
             
@@ -3617,6 +3682,160 @@
                     showStatus(`修改失败: ${error}`, 'error');
                 });
         });
+        
+        // Report Sync 相关函数
+        function openReportSyncModal() {
+            const modal = new bootstrap.Modal(document.getElementById('reportSyncModal'));
+            modal.show();
+            
+            // 清理之前的结果
+            document.getElementById('reportSyncResults').style.display = 'none';
+            document.getElementById('reportSyncMessage').style.display = 'none';
+            document.getElementById('reportSyncFile').value = '';
+        }
+        
+        function processReportSync() {
+            const fileInput = document.getElementById('reportSyncFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showReportSyncMessage('Please select an Excel file', 'warning');
+                return;
+            }
+            
+            if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+                showReportSyncMessage('Only .xlsx and .xls files are supported', 'danger');
+                return;
+            }
+            
+            // 清理之前的结果
+            document.getElementById('reportSyncResults').style.display = 'none';
+            
+            // 显示加载状态
+            showReportSyncMessage('Processing file...', 'info');
+            document.getElementById('reportSyncProcessBtn').disabled = true;
+            
+            // 创建 FormData
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            // 添加重试机制处理临时性连接失败
+            const maxRetries = 3;
+            let retryCount = 0;
+            
+            function performRequest() {
+                return authenticatedFetch('/api/report_sync', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    document.getElementById('reportSyncProcessBtn').disabled = false;
+                    
+                    // 检查响应状态
+                    if (!response || !response.ok) {
+                        throw new Error(`服务器返回错误: ${response?.status || '连接失败'}`);
+                    }
+                    
+                    // 检查是否成功
+                    const successHeader = response.headers.get('X-Report-Sync-Success');
+                    const updatedHeader = response.headers.get('X-Report-Sync-Updated');
+                    const errorsHeader = response.headers.get('X-Report-Sync-Errors');
+                    
+                    if (response.ok && successHeader === 'true') {
+                        // 获取文件流并自动下载
+                        return response.blob().then(blob => {
+                            // 创建临时 URL 并触发下载
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'report_synced.xlsx';
+                            document.body.appendChild(a);
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                            document.body.removeChild(a);
+                            
+                            // 显示成功消息
+                            showReportSyncMessage(`成功更新 ${updatedHeader} 行数据，文件已自动下载`, 'success');
+                            
+                            // 解析错误信息
+                            let errors = null;
+                            if (errorsHeader) {
+                                try {
+                                    errors = JSON.parse(errorsHeader);
+                                } catch (e) {}
+                            }
+                            
+                            if (updatedHeader > 0) {
+                                displayReportSyncResults(updatedHeader, updatedHeader, errors);
+                            }
+                            
+                            // 一段时间后自动关闭模态框
+                            setTimeout(() => {
+                                const modalElement = document.getElementById('reportSyncModal');
+                                const modal = bootstrap.Modal.getInstance(modalElement);
+                                if (modal) {
+                                    modal.hide();
+                                }
+                            }, 2000);
+                        });
+                    } else {
+                        // 处理错误响应
+                        return response.text().then(text => {
+                            try {
+                                const data = JSON.parse(text);
+                                showReportSyncMessage(`处理失败: ${data.error}`, 'danger');
+                            } catch (e) {
+                                showReportSyncMessage(`处理失败: 服务器错误`, 'danger');
+                            }
+                        });
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('reportSyncProcessBtn').disabled = false;
+                    
+                    // 如果是网络错误且未超过重试次数，则重试
+                    if ((error.message.includes('连接') || error.message.includes('ERR_EMPTY_RESPONSE')) && retryCount < maxRetries) {
+                        retryCount++;
+                        showReportSyncMessage(`连接失败，正在重试 (${retryCount}/${maxRetries})...`, 'warning');
+                        return new Promise(resolve => {
+                            setTimeout(() => resolve(performRequest()), 2000);
+                        });
+                    }
+                    
+                    showReportSyncMessage(`处理失败: ${error.message}`, 'danger');
+                    throw error;
+                });
+            }
+            
+            performRequest();
+        }
+        
+        function showReportSyncMessage(message, type) {
+            const messageEl = document.getElementById('reportSyncMessage');
+            messageEl.textContent = message;
+            messageEl.className = `alert alert-${type}`;
+            messageEl.style.display = 'block';
+        }
+        
+        function displayReportSyncResults(successCount, totalCount, errors) {
+            const resultsDiv = document.getElementById('reportSyncResults');
+            const resultsList = document.getElementById('reportSyncResultsList');
+            
+            let html = `<div class="alert alert-success">`;
+            html += `<strong>成功更新：</strong> ${successCount}/${totalCount} 行`;
+            html += `</div>`;
+            
+            if (errors && errors.length > 0) {
+                html += `<div class="alert alert-warning"><strong>警告：</strong><ul>`;
+                errors.forEach(err => {
+                    html += `<li>${err}</li>`;
+                });
+                html += `</ul></div>`;
+            }
+            
+            resultsList.innerHTML = html;
+            resultsDiv.style.display = 'block';
+        }
     </script>
 </body>
 </html>
