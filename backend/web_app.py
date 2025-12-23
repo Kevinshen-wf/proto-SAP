@@ -75,7 +75,7 @@ def check_authentication():
     ]
     
     # 静态文件不需要认证
-    if request.path.startswith('/css/') or request.path.startswith('/js/') or request.path.startswith('/assets/'):
+    if request.path.startswith('/static/') or request.path.startswith('/css/') or request.path.startswith('/js/') or request.path.startswith('/assets/'):
         return
     
     # 检查是否是公开路由

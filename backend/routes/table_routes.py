@@ -281,3 +281,157 @@ def sync_report():
                 print(f"[Report Sync] 已删除临时文件: {tmp_file_path}")
             except Exception as cleanup_e:
                 print(f"[Report Sync] 删除临时文件失败: {str(cleanup_e)}")
+
+@table_bp.route('/detect_excel_sheets', methods=['POST'])
+@token_required
+def detect_excel_sheets():
+    """检测上传的 Excel 文件中的工作表名称"""
+    tmp_file_path = None
+    try:
+        # 获取上传的文件
+        file = request.files.get('file')
+        
+        if not file:
+            return jsonify({'success': False, 'error': '缺少文件'}), 400
+        
+        print(f"[Excel Detect] 开始检测文件: {file.filename}")
+        
+        # 创建临时文件
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp_file:
+            file.save(tmp_file.name)
+            tmp_file_path = tmp_file.name
+        
+        try:
+            # 检测工作表
+            from openpyxl import load_workbook
+            wb = load_workbook(tmp_file_path)
+            sheet_names = wb.sheetnames
+            
+            print(f"[Excel Detect] 检测到工作表: {sheet_names}")
+            
+            return jsonify({
+                'success': True,
+                'sheets': sheet_names,
+                'file_name': file.filename
+            })
+        
+        except Exception as inner_e:
+            print(f"[Excel Detect] 检测失败: {str(inner_e)}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({'success': False, 'error': str(inner_e)}), 500
+    
+    except Exception as e:
+        print(f"[Excel Detect] 异常: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+    
+    finally:
+        # 删除临时文件
+        if tmp_file_path and os.path.exists(tmp_file_path):
+            try:
+                os.unlink(tmp_file_path)
+                print(f"[Excel Detect] 已删除临时文件: {tmp_file_path}")
+            except Exception as cleanup_e:
+                print(f"[Excel Detect] 删除临时文件失败: {str(cleanup_e)}")
+
+@table_bp.route('/excel_sync', methods=['POST'])
+@token_required
+def sync_excel():
+    """从上传的两个 Excel 文件同步数据到 order report"""
+    tmp_order_file_path = None
+    tmp_source_file_path = None
+    try:
+        # 获取上传的文件
+        order_report_file = request.files.get('order_report_file')
+        source_file = request.files.get('source_file')
+        source_sheet = request.form.get('source_sheet', 'WF Closed')
+        order_sheet = request.form.get('order_sheet', 'Order Report')
+        
+        if not order_report_file:
+            return jsonify({'success': False, 'error': '缺少 Order Report 文件'}), 400
+        
+        if not source_file:
+            return jsonify({'success': False, 'error': '缺少源数据文件'}), 400
+        
+        print(f"[Excel Sync] 开始处理文件: {order_report_file.filename} 和 {source_file.filename}")
+        print(f"[Excel Sync] 源表: {source_sheet}, Order sheet: {order_sheet}")
+        
+        # 创建临时文件
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp_file:
+            order_report_file.save(tmp_file.name)
+            tmp_order_file_path = tmp_file.name
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp_file:
+            source_file.save(tmp_file.name)
+            tmp_source_file_path = tmp_file.name
+        
+        print(f"[Excel Sync] 临时文件路径: {tmp_order_file_path} 和 {tmp_source_file_path}")
+        
+        try:
+            # 创建处理器并处理 Excel 文件
+            processor = ExcelSyncProcessor()
+            print(f"[Excel Sync] 开始处理 Excel...")
+            result = processor.process_excel_sync_two_files(
+                tmp_order_file_path,
+                tmp_source_file_path,
+                order_sheet=order_sheet,
+                source_sheet=source_sheet
+            )
+            print(f"[Excel Sync] 处理结果: {result['success']}, 更新行数: {result.get('updated_rows', 0)}")
+            
+            # 如果处理成功，返回修改后的 order report 文件
+            if result['success']:
+                # 读取修改后的文件内容
+                print(f"[Excel Sync] 读取修改后的 order report 文件...")
+                with open(tmp_order_file_path, 'rb') as f:
+                    file_data = io.BytesIO(f.read())
+                
+                # 返回 Excel 文件
+                file_data.seek(0)
+                response = send_file(
+                    file_data,
+                    mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    as_attachment=True,
+                    download_name='order_report_synced.xlsx'
+                )
+                
+                # 附带处理结果信息
+                response.headers['X-Excel-Sync-Success'] = 'true'
+                response.headers['X-Excel-Sync-Updated'] = str(result['updated_rows'])
+                if result.get('errors'):
+                    response.headers['X-Excel-Sync-Errors'] = json.dumps(result['errors'])
+                
+                print(f"[Excel Sync] 成功返回文件")
+                return response
+            else:
+                print(f"[Excel Sync] 处理失败: {result.get('error')}")
+                return jsonify(result), 400
+        except Exception as inner_e:
+            print(f"[Excel Sync] 内部异常: {str(inner_e)}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({'success': False, 'error': str(inner_e)}), 500
+    
+    except Exception as e:
+        print(f"[Excel Sync] 外部异常: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+    
+    finally:
+        # 删除临时文件
+        if tmp_order_file_path and os.path.exists(tmp_order_file_path):
+            try:
+                os.unlink(tmp_order_file_path)
+                print(f"[Excel Sync] 已删除临时文件: {tmp_order_file_path}")
+            except Exception as cleanup_e:
+                print(f"[Excel Sync] 删除临时文件失败: {str(cleanup_e)}")
+        
+        if tmp_source_file_path and os.path.exists(tmp_source_file_path):
+            try:
+                os.unlink(tmp_source_file_path)
+                print(f"[Excel Sync] 已删除临时文件: {tmp_source_file_path}")
+            except Exception as cleanup_e:
+                print(f"[Excel Sync] 删除临时文件失败: {str(cleanup_e)}")

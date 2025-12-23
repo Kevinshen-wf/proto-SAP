@@ -218,6 +218,136 @@ def add_shipment_batch_no_column(cursor):
     except Exception as e:
         print(f"✗ 处理closed表列時出错: {e}")
 
+def add_timestamp_columns(cursor):
+    """
+    为所有采购订单表添加 created_at 和 update_at 字段
+    """
+    try:
+        tables = ['wf_open', 'wf_closed', 'non_wf_open', 'non_wf_closed']
+        
+        for table_name in tables:
+            # 检查列是否已存在
+            check_columns_query = """
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_schema = 'purchase_orders' 
+                AND table_name = %s 
+                AND column_name IN ('created_at', 'update_at')
+            """
+            cursor.execute(check_columns_query, (table_name,))
+            existing_columns = [row[0] for row in cursor.fetchall()]
+            
+            # 添加 created_at
+            if 'created_at' not in existing_columns:
+                try:
+                    add_created_at_query = f"""
+                        ALTER TABLE purchase_orders.{table_name} 
+                        ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    """
+                    cursor.execute(add_created_at_query)
+                    
+                    # 为现有记录设置默认值（使用 po_placed_date 或当前时间）
+                    update_existing_query = f"""
+                        UPDATE purchase_orders.{table_name}
+                        SET created_at = COALESCE(po_placed_date, CURRENT_TIMESTAMP)
+                        WHERE created_at IS NULL
+                    """
+                    cursor.execute(update_existing_query)
+                    print(f"✓ 成功添加 created_at 列到 {table_name} 表")
+                except Exception as e:
+                    print(f"✗ 添加 created_at 列到 {table_name} 表时出错: {e}")
+            else:
+                print(f"✓ {table_name} 表已经含有 created_at 列")
+            
+            # 添加 update_at
+            if 'update_at' not in existing_columns:
+                try:
+                    add_update_at_query = f"""
+                        ALTER TABLE purchase_orders.{table_name} 
+                        ADD COLUMN update_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    """
+                    cursor.execute(add_update_at_query)
+                    print(f"✓ 成功添加 update_at 列到 {table_name} 表")
+                except Exception as e:
+                    print(f"✗ 添加 update_at 列到 {table_name} 表时出错: {e}")
+            else:
+                print(f"✓ {table_name} 表已经含有 update_at 列")
+                
+    except Exception as e:
+        print(f"✗ 添加时间戳列时出错: {e}")
+
+def create_update_timestamp_triggers(cursor):
+    """
+    创建触发器，在记录更新时自动更新 update_at 字段
+    """
+    try:
+        # 创建触发器函数
+        create_function_query = """
+        CREATE OR REPLACE FUNCTION purchase_orders.update_timestamp()
+        RETURNS TRIGGER AS $$
+        BEGIN
+            NEW.update_at = CURRENT_TIMESTAMP;
+            RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql;
+        """
+        cursor.execute(create_function_query)
+        print("✓ 成功创建 update_timestamp 函数")
+        
+        tables = ['wf_open', 'wf_closed', 'non_wf_open', 'non_wf_closed']
+        for table_name in tables:
+            try:
+                # 删除旧触发器（如果存在）
+                drop_trigger_query = f"""
+                DROP TRIGGER IF EXISTS update_{table_name}_timestamp 
+                ON purchase_orders.{table_name}
+                """
+                cursor.execute(drop_trigger_query)
+                
+                # 创建新触发器
+                create_trigger_query = f"""
+                CREATE TRIGGER update_{table_name}_timestamp
+                BEFORE UPDATE ON purchase_orders.{table_name}
+                FOR EACH ROW
+                EXECUTE FUNCTION purchase_orders.update_timestamp()
+                """
+                cursor.execute(create_trigger_query)
+                print(f"✓ 成功创建 update_at 触发器 for {table_name} 表")
+            except Exception as e:
+                print(f"✗ 创建触发器 for {table_name} 表时出错: {e}")
+                
+    except Exception as e:
+        print(f"✗ 创建触发器函数时出错: {e}")
+
+def fix_created_at_values(cursor):
+    """
+    修复现有记录的 created_at 值，使用 po_placed_date 作为真正的创建时间
+    这个函数是幂等的，可以安全地多次运行
+    """
+    try:
+        tables = ['wf_open', 'wf_closed', 'non_wf_open', 'non_wf_closed']
+        
+        for table_name in tables:
+            try:
+                # 更新 created_at 为 po_placed_date（如果 po_placed_date 不为空）
+                update_query = f"""
+                UPDATE purchase_orders.{table_name}
+                SET created_at = po_placed_date
+                WHERE po_placed_date IS NOT NULL 
+                AND (created_at IS NULL OR created_at != po_placed_date)
+                """
+                cursor.execute(update_query)
+                affected_rows = cursor.rowcount
+                if affected_rows > 0:
+                    print(f"✓ 成功修复 {table_name} 表的 {affected_rows} 条记录的 created_at 值")
+                else:
+                    print(f"✓ {table_name} 表的 created_at 值已经正确，无需修复")
+            except Exception as e:
+                print(f"✗ 修复 {table_name} 表的 created_at 值时出错: {e}")
+                
+    except Exception as e:
+        print(f"✗ 修复 created_at 值时出错: {e}")
+
 def create_users_table(cursor):
     """创建用户表"""
     try:
@@ -297,6 +427,9 @@ def main():
             create_users_table(cursor)
             create_po_records_table(cursor)
             add_shipment_batch_no_column(cursor)
+            add_timestamp_columns(cursor)
+            create_update_timestamp_triggers(cursor)
+            fix_created_at_values(cursor)
             
             # 提交更改
             connection.commit()

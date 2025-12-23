@@ -1,63 +1,67 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Database Management</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
     <style>
         * {
             transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
         }
-        
+
         body {
             padding: 20px;
             background: #f5f7fa;
             min-height: 100vh;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         }
-        
+
         /* 根据缩放比例调整body内边距 */
         @media (min-width: 1600px) {
             body {
                 padding: 30px 40px;
             }
         }
+
         @media (min-width: 1200px) and (max-width: 1599px) {
             body {
                 padding: 25px 35px;
             }
         }
+
         @media (min-width: 992px) and (max-width: 1199px) {
             body {
                 padding: 20px 30px;
             }
         }
+
         @media (max-width: 991px) {
             body {
                 padding: 15px 20px;
             }
         }
-        
+
         .container-fluid {
             margin: 0 auto;
             width: 100%;
             padding-left: 0;
             padding-right: 0;
         }
-        
+
         .container-fluid .row {
             margin-left: 0;
             margin-right: 0;
             width: 100%;
         }
-        
+
         .container-fluid .col-md-4,
         .container-fluid .col-md-8 {
             padding-left: 0;
             padding-right: 0;
         }
-        
+
         .header {
             display: flex;
             justify-content: space-between;
@@ -66,7 +70,7 @@
             animation: slideDown 0.5s ease;
             padding: 0;
         }
-        
+
         .header h1 {
             font-weight: 600;
             color: #1a202c;
@@ -74,15 +78,16 @@
             margin: 0;
             text-shadow: none;
         }
-        
+
         .user-info {
             color: #4a5568;
             display: flex;
             gap: 15px;
             align-items: center;
         }
-        
-        .user-info a, .user-info button {
+
+        .user-info a,
+        .user-info button {
             background: white;
             border: 1px solid #e2e8f0;
             color: #4a5568;
@@ -93,75 +98,81 @@
             transition: all 0.3s ease;
             font-size: 0.9rem;
         }
-        
-        .user-info a:hover, .user-info button:hover {
+
+        .user-info a:hover,
+        .user-info button:hover {
             background: #f7fafc;
             border-color: #cbd5e0;
             transform: none;
         }
-        
+
         @keyframes slideDown {
             from {
                 opacity: 0;
                 transform: translateY(-20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
-        
+
         .table-container {
             background: white;
             border-radius: 8px;
             padding: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
             margin-bottom: 25px;
             animation: fadeInUp 0.6s ease;
             border: 1px solid #e2e8f0;
             overflow-x: auto;
         }
-        
+
         /* 根据缩放比例调整内边距 */
         @media (min-width: 1600px) {
             .table-container {
                 padding: 10px;
             }
         }
+
         @media (min-width: 1200px) and (max-width: 1599px) {
             .table-container {
                 padding: 10px;
             }
         }
+
         @media (min-width: 992px) and (max-width: 1199px) {
             .table-container {
                 padding: 8px;
             }
         }
+
         @media (max-width: 991px) {
             .table-container {
                 padding: 8px;
             }
         }
-        
+
         @keyframes fadeInUp {
             from {
                 opacity: 0;
                 transform: translateY(20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
-        
+
         .table-container h5 {
             color: #1a202c;
             font-weight: 600;
             margin-bottom: 8px;
             font-size: 1rem;
         }
-        
+
         .editable-cell {
             cursor: text;
             padding: 6px 4px;
@@ -177,18 +188,19 @@
             overflow: visible;
             font-size: 0.9rem;
         }
-        
+
         .editable-cell:hover {
             background: #f7fafc;
             border: 1px solid #cbd5e0;
             box-shadow: none;
         }
-        
+
         .editing-cell {
             padding: 0;
         }
-        
-        .editing-cell input, .editing-cell select {
+
+        .editing-cell input,
+        .editing-cell select {
             width: 100%;
             border: 1px solid #cbd5e0;
             padding: 8px;
@@ -197,7 +209,7 @@
             box-shadow: none;
             font-family: inherit;
         }
-        
+
         /* description-cell 和 comment-cell 中的文本输入框支持换行 */
         .editing-cell.description-cell input,
         .editing-cell.comment-cell input {
@@ -209,7 +221,7 @@
             padding: 10px;
             line-height: 1.4;
         }
-        
+
         /* textarea 样式 */
         .editing-cell textarea {
             font-family: inherit;
@@ -223,19 +235,20 @@
             word-break: break-word;
             line-height: 1.4;
         }
-        
+
         .editing-cell textarea:focus {
             border-color: #4299e1;
             outline: none;
             box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
         }
-        
-        .editing-cell input:focus, .editing-cell select:focus {
+
+        .editing-cell input:focus,
+        .editing-cell select:focus {
             border-color: #4299e1;
             outline: none;
             box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
         }
-        
+
         .date-input {
             width: 100%;
             padding: 8px;
@@ -244,13 +257,13 @@
             box-sizing: border-box;
             box-shadow: none;
         }
-        
+
         .date-input:focus {
             border-color: #4299e1;
             outline: none;
             box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
         }
-        
+
         .filter-row {
             margin-bottom: 15px;
             padding: 15px;
@@ -261,51 +274,54 @@
             flex-wrap: wrap;
             gap: 10px;
         }
-        
-        .filter-row > .col,
-        .filter-row > div {
+
+        .filter-row>.col,
+        .filter-row>div {
             flex: 0 0 auto;
             padding-left: 5px;
             padding-right: 5px;
             min-width: 200px;
         }
-        
+
         /* 根据缩放比例调整检索框宽度 */
         @media (max-width: 1200px) {
-            .filter-row > .col,
-            .filter-row > div {
+
+            .filter-row>.col,
+            .filter-row>div {
                 min-width: 150px;
             }
         }
+
         @media (max-width: 768px) {
-            .filter-row > .col,
-            .filter-row > div {
+
+            .filter-row>.col,
+            .filter-row>div {
                 min-width: 100%;
                 flex: 0 0 100%;
             }
         }
-        
+
         .action-buttons {
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
             flex-wrap: wrap;
         }
-        
+
         .btn {
             border-radius: 6px;
             font-weight: 500;
             transition: all 0.3s ease;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
             border: 1px solid transparent;
         }
-        
+
         .btn-primary {
             background: #4299e1;
             border-color: #4299e1;
             color: white;
         }
-        
+
         .btn-primary:hover {
             background: #3182ce;
             border-color: #3182ce;
@@ -313,13 +329,13 @@
             box-shadow: 0 2px 6px rgba(66, 153, 225, 0.15);
             color: white;
         }
-        
+
         .btn-success {
             background: #48bb78;
             border-color: #48bb78;
             color: white;
         }
-        
+
         .btn-success:hover {
             background: #38a169;
             border-color: #38a169;
@@ -327,13 +343,13 @@
             box-shadow: 0 2px 6px rgba(72, 187, 120, 0.15);
             color: white;
         }
-        
+
         .btn-danger {
             background: #f56565;
             border-color: #f56565;
             color: white;
         }
-        
+
         .btn-danger:hover {
             background: #e53e3e;
             border-color: #e53e3e;
@@ -341,19 +357,19 @@
             box-shadow: 0 2px 6px rgba(245, 101, 101, 0.15);
             color: white;
         }
-        
+
         .btn-secondary {
             background: #a0aec0;
             border: none;
             color: white;
         }
-        
+
         .btn-secondary:hover {
             background: #718096;
             transform: none;
             box-shadow: 0 2px 6px rgba(160, 174, 192, 0.15);
         }
-        
+
         .status-message {
             padding: 15px 20px;
             border-radius: 6px;
@@ -362,69 +378,74 @@
             align-items: center;
             gap: 10px;
             animation: slideDown 0.3s ease;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
             border-left: 4px solid transparent;
         }
-        
+
         .success {
             background: #f0fdf4;
             color: #166534;
             border-left-color: #48bb78;
         }
-        
+
         .success::before {
             content: '✓';
             font-weight: bold;
             font-size: 1.2rem;
         }
-        
+
         .error {
             background: #fef2f2;
             color: #7f1d1d;
             border-left-color: #f56565;
         }
-        
+
         .error::before {
             content: '✕';
             font-weight: bold;
             font-size: 1.2rem;
         }
-        
+
         .loading {
             background: #f0f9ff;
             color: #0c4a6e;
             border-left-color: #4299e1;
         }
-        
+
         .loading::before {
             content: '⟳';
             display: inline-block;
             animation: spin 1s linear infinite;
         }
-        
+
         .warning {
             background: #fffbeb;
             color: #854d0e;
             border-left-color: #ed8936;
         }
-        
+
         .warning::before {
             content: '⚠';
             font-weight: bold;
             font-size: 1.2rem;
         }
-        
+
         @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
         }
-        
+
         .table {
             margin-bottom: 0;
             width: 100%;
             border-collapse: collapse;
         }
-        
+
         .table th {
             background: #f7fafc;
             color: #2d3748;
@@ -437,7 +458,7 @@
             text-overflow: ellipsis;
             min-width: 80px;
         }
-        
+
         .table td {
             vertical-align: middle;
             white-space: nowrap;
@@ -448,7 +469,7 @@
             border-color: #e2e8f0;
             min-width: 80px;
         }
-        
+
         /* Description 和 Comment 列的特殊样式 - 支持换行，使用!important保证优先级 */
         .table td.description-cell,
         .table td.comment-cell {
@@ -463,7 +484,7 @@
             padding: 6px 4px !important;
             line-height: 1.4 !important;
         }
-        
+
         /* PO PN eta_wfsz 等列不能用省略号，必须完整排流轮换行水平散布 */
         .table td.no-ellipsis-cell {
             white-space: normal !important;
@@ -477,7 +498,7 @@
             line-height: 1.3 !important;
             font-size: 0.85rem !important;
         }
-        
+
         /* shipping_cost 列不能有省略号，需要完整显示 shipping cost 值（例如 s:€100.00） */
         .table td.shipping-cost-cell {
             white-space: normal !important;
@@ -488,105 +509,167 @@
             vertical-align: middle !important;
             padding: 6px 4px !important;
         }
-        
+
         /* 响应式：根据屏幕大小调整 Description 和 Comment 的最大宽度 */
         @media (min-width: 1600px) {
+
             .table td.description-cell,
             .table td.comment-cell {
                 max-width: 180px !important;
             }
         }
+
         @media (min-width: 1400px) and (max-width: 1599px) {
+
             .table td.description-cell,
             .table td.comment-cell {
                 max-width: 170px !important;
             }
         }
+
         @media (min-width: 1200px) and (max-width: 1399px) {
+
             .table td.description-cell,
             .table td.comment-cell {
                 max-width: 160px !important;
             }
         }
+
         @media (min-width: 992px) and (max-width: 1199px) {
+
             .table td.description-cell,
             .table td.comment-cell {
                 max-width: 150px !important;
             }
         }
+
         @media (min-width: 768px) and (max-width: 991px) {
+
             .table td.description-cell,
             .table td.comment-cell {
                 max-width: 140px !important;
                 font-size: 0.9rem;
             }
         }
+
         @media (max-width: 767px) {
+
             .table td.description-cell,
             .table td.comment-cell {
                 max-width: 120px !important;
                 font-size: 0.8rem;
             }
         }
+
         /* 根据缩放比例调整列宽 */
         @media (min-width: 1600px) {
-            .table th, .table td { min-width: 80px; }
+
+            .table th,
+            .table td {
+                min-width: 80px;
+            }
+
             /* description 和 comment 列获得更宽的空间 */
             .table td.description-cell,
-            .table td.comment-cell { min-width: 0; }
+            .table td.comment-cell {
+                min-width: 0;
+            }
         }
+
         @media (min-width: 1400px) and (max-width: 1599px) {
-            .table th, .table td { min-width: 70px; }
+
+            .table th,
+            .table td {
+                min-width: 70px;
+            }
+
             .table td.description-cell,
-            .table td.comment-cell { min-width: 0; }
+            .table td.comment-cell {
+                min-width: 0;
+            }
         }
+
         @media (min-width: 1200px) and (max-width: 1399px) {
-            .table th, .table td { min-width: 60px; }
+
+            .table th,
+            .table td {
+                min-width: 60px;
+            }
+
             .table td.description-cell,
-            .table td.comment-cell { min-width: 0; }
+            .table td.comment-cell {
+                min-width: 0;
+            }
         }
+
         @media (min-width: 992px) and (max-width: 1199px) {
-            .table th, .table td { min-width: 50px; }
+
+            .table th,
+            .table td {
+                min-width: 50px;
+            }
+
             .table td.description-cell,
-            .table td.comment-cell { min-width: 0; }
+            .table td.comment-cell {
+                min-width: 0;
+            }
         }
+
         @media (min-width: 768px) and (max-width: 991px) {
-            .table th, .table td { min-width: 40px; font-size: 0.9rem; }
+
+            .table th,
+            .table td {
+                min-width: 40px;
+                font-size: 0.9rem;
+            }
+
             .table td.description-cell,
-            .table td.comment-cell { min-width: 0; }
+            .table td.comment-cell {
+                min-width: 0;
+            }
         }
+
         @media (max-width: 767px) {
-            .table th, .table td { min-width: 30px; font-size: 0.8rem; padding: 8px 6px; }
+
+            .table th,
+            .table td {
+                min-width: 30px;
+                font-size: 0.8rem;
+                padding: 8px 6px;
+            }
+
             .table td.description-cell,
-            .table td.comment-cell { min-width: 0; }
+            .table td.comment-cell {
+                min-width: 0;
+            }
         }
-        
+
         .table tbody tr:hover {
             background: #f7fafc;
             box-shadow: none;
             border-left: 3px solid #4299e1;
         }
-        
+
         .table-responsive {
             overflow-x: auto;
             border-radius: 8px;
             -webkit-overflow-scrolling: touch;
         }
-        
+
         /* 数据验证错误行样式 */
         .invalid-row {
             background: #fef2f2 !important;
             color: #7f1d1d;
         }
-        
+
         .invalid-row:hover {
             background: #fed7d7 !important;
         }
-        
+
         .invalid-row td {
             border-color: #fca5a5 !important;
         }
-        
+
         /* 検索框样式调整 */
         .filter-row .col {
             padding-left: 5px;
@@ -594,16 +677,16 @@
             position: relative;
             min-width: auto;
         }
-        
+
         /* 日期输入框样式 */
         .date-filter {
             min-width: 140px;
         }
-        
+
         .date-filter-mode {
             font-size: 0.875rem;
         }
-        
+
         .clear-filter-btn {
             display: flex;
             align-items: center;
@@ -612,78 +695,78 @@
             white-space: nowrap;
             width: 100%;
         }
-        
+
         /* 响应式三屏幕 */
         @media (max-width: 768px) {
             .action-buttons {
                 flex-direction: column;
                 width: 100%;
             }
-            
+
             .action-buttons .btn {
                 width: 100%;
             }
-            
+
             .table-container {
                 padding: 15px;
             }
-            
+
             .filter-row {
                 padding: 12px;
             }
         }
-        
+
         @media (max-width: 480px) {
             .header h1 {
                 font-size: 1.5rem;
             }
-            
+
             .user-info {
                 flex-direction: column;
                 width: 100%;
                 gap: 8px;
             }
-            
+
             .user-info a,
             .user-info button {
                 width: 100%;
                 text-align: center;
             }
-            
+
             .filter-row {
                 padding: 10px;
             }
         }
-        
+
         .pagination {
             gap: 5px;
         }
-        
+
         .page-link {
             border-radius: 4px;
             border: 1px solid #e2e8f0;
             color: #4a5568;
             transition: all 0.3s ease;
         }
-        
+
         .page-link:hover {
             background: #f7fafc;
             color: #4299e1;
             border-color: #cbd5e0;
         }
-        
+
         .page-item.active .page-link {
             background: #4299e1;
             border-color: #4299e1;
             color: white;
         }
-        
+
         /* 复选框样式 */
         .checkbox-cell {
             text-align: center;
             width: 50px;
         }
-        
+
         /* 操作列样式 */
         .action-cell {
             display: flex;
@@ -694,13 +777,13 @@
             min-width: 130px !important;
             max-width: 130px !important;
         }
-        
+
         .shipment-checkbox {
             width: 20px;
             height: 20px;
             cursor: pointer;
         }
-        
+
         /* 回退按钮样式 */
         .return-shipment-btn {
             background: #ffc107;
@@ -710,18 +793,18 @@
             font-weight: bold;
             min-width: 32px !important;
         }
-        
+
         .return-shipment-btn:hover {
             background: #ff9800;
             border-color: #f57c00;
             color: white;
             transform: scale(1.05);
         }
-        
+
         .return-shipment-btn:active {
             transform: scale(0.95);
         }
-        
+
         .delete-btn {
             background: none;
             border: none;
@@ -738,12 +821,23 @@
             border-radius: 3px;
             transition: all 0.2s ease;
         }
-        
+
         .delete-btn:hover {
             background: #fed7d7;
             color: #e53e3e;
         }
-        
+
+        .delete-btn:hover {
+            background: #fed7d7;
+            color: #e53e3e;
+        }
+
+        /* Allow Actions column to be narrower than global min-width */
+        .table th:first-child,
+        .table td.action-cell {
+            min-width: 40px !important;
+        }
+
         /* 全局发货按钮区域 */
         .shipment-button-area {
             display: flex;
@@ -752,14 +846,14 @@
             margin-bottom: 20px;
             flex-wrap: wrap;
         }
-        
+
         .selected-items-tabs {
             display: flex;
             gap: 5px;
             flex-wrap: wrap;
             align-items: center;
         }
-        
+
         .selected-tab {
             background: #e6f2ff;
             border: 1px solid #4299e1;
@@ -770,7 +864,7 @@
             align-items: center;
             gap: 5px;
         }
-        
+
         .selected-tab .remove-btn {
             background: none;
             border: none;
@@ -779,12 +873,13 @@
             font-weight: bold;
             padding: 0 3px;
         }
-        
+
         .selected-tab .remove-btn:hover {
             color: #e53e3e;
         }
     </style>
 </head>
+
 <body>
     <div class="container-fluid">
         <div class="header">
@@ -796,7 +891,7 @@
                 <button id="logoutBtn" style="display: none;">Logout</button>
             </div>
         </div>
-        
+
         <!-- 导航按钮 -->
         <div class="mb-3">
             <a href="/" class="btn btn-primary">
@@ -809,10 +904,8 @@
                 📋 Report Sync
             </button>
         </div>
-        
-        <!-- 状态消息区域 -->
         <div id="statusMessage" class="status-message" style="display: none;"></div>
-        
+
         <!-- 表选择 -->
         <div class="row mb-3">
             <div class="col-md-4">
@@ -832,7 +925,7 @@
                 </button>
             </div>
         </div>
-        
+
         <!-- 全局发货按鑒区域 (仅在Open表显示) -->
         <div id="shipmentButtonArea" class="shipment-button-area" style="display: none;">
             <button class="btn btn-warning me-2" onclick="openGlobalShipmentModal()" id="globalShipmentBtn">
@@ -845,7 +938,7 @@
                 <!-- 已选项目将显示在这里 -->
             </div>
         </div>
-        
+
         <!-- 插入表单 (默认隐藏) -->
         <div id="insertFormContainer" class="table-container" style="display: none;">
             <h5>Insert New Record</h5>
@@ -855,9 +948,9 @@
                 <button class="btn btn-secondary" onclick="hideInsertForm()">Cancel</button>
             </div>
         </div>
-        
 
-        
+
+
         <!-- 数据表格 -->
         <div class="table-container">
             <h5 id="tableTitle">WF Open Table Data</h5>
@@ -886,7 +979,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body" id="confirmModalBody">
-                                        Are you sure you want to perform this operation?
+                    Are you sure you want to perform this operation?
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -914,7 +1007,8 @@
                             <div class="row">
                                 <div class="col-md-4 mb-3">
                                     <label class="form-label">Tracking Number <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="globalTrackingNo" placeholder="Enter tracking number">
+                                    <input type="text" class="form-control" id="globalTrackingNo"
+                                        placeholder="Enter tracking number">
                                 </div>
                                 <div class="col-md-4 mb-3">
                                     <label class="form-label">Shipping Mode <span class="text-danger">*</span></label>
@@ -928,12 +1022,13 @@
                                 </div>
                                 <div class="col-md-4 mb-3">
                                     <label class="form-label">Shipping Cost <span class="text-danger">*</span></label>
-                                    <input type="number" class="form-control" id="globalShippingCost" placeholder="Enter shipping cost" step="0.01">
+                                    <input type="number" class="form-control" id="globalShippingCost"
+                                        placeholder="Enter shipping cost" step="0.01">
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- 物料发货信息 -->
                     <div class="card">
                         <div class="card-header">
@@ -946,7 +1041,8 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="confirmGlobalShipmentBtn">Confirm Shipment</button>
+                    <button type="button" class="btn btn-primary" id="confirmGlobalShipmentBtn">Confirm
+                        Shipment</button>
                 </div>
             </div>
         </div>
@@ -974,7 +1070,8 @@
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label">Return Quantity <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" id="returnQty" placeholder="0" step="0.01" min="0">
+                            <input type="number" class="form-control" id="returnQty" placeholder="0" step="0.01"
+                                min="0">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Max Available Qty</label>
@@ -992,7 +1089,8 @@
                         </div>
                         <div id="updateShippingCostContainer" style="display: none; margin-top: 10px;">
                             <label class="form-label">New Shipping Cost</label>
-                            <input type="number" class="form-control" id="newBatchShippingCost" placeholder="0" step="0.01" min="0">
+                            <input type="number" class="form-control" id="newBatchShippingCost" placeholder="0"
+                                step="0.01" min="0">
                         </div>
                     </div>
                 </div>
@@ -1046,7 +1144,7 @@
                             <li>Reply will be calculated from ETA date + 7 days</li>
                         </ol>
                     </div>
-                    
+
                     <div id="reportSyncUploadArea" class="card">
                         <div class="card-body">
                             <div class="mb-3">
@@ -1063,7 +1161,8 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="reportSyncProcessBtn" onclick="processReportSync()">
+                    <button type="button" class="btn btn-primary" id="reportSyncProcessBtn"
+                        onclick="processReportSync()">
                         📝 Process & Sync
                     </button>
                 </div>
@@ -1071,7 +1170,74 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/bootstrap.bundle.min.js"></script>
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">📚 Excel Sync - Data Synchronization</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <strong>How to use:</strong>
+                    <ol>
+                        <li>Upload an Excel file containing Order Report sheet</li>
+                        <li>Upload another Excel file containing WF Closed/Non-WF Closed sheet</li>
+                        <li>The system will find matching records and fill Comments (Tracking No) and Reply (ETA + 7
+                            days)</li>
+                    </ol>
+                </div>
+
+                <div id="excelSyncUploadArea" class="card">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="excelSyncOrderReportFile" class="form-label">Select Order Report Excel File
+                                (.xlsx)</label>
+                            <input type="file" class="form-control" id="excelSyncOrderReportFile" accept=".xlsx,.xls"
+                                onchange="detectOrderSheets()">
+                            <div id="orderReportSheetsInfo" style="margin-top: 8px; font-size: 0.9em;"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="excelSyncSourceFile" class="form-label">Select Source Data Excel File
+                                (.xlsx)</label>
+                            <input type="file" class="form-control" id="excelSyncSourceFile" accept=".xlsx,.xls"
+                                onchange="detectSourceSheets()">
+                            <div id="sourceReportSheetsInfo" style="margin-top: 8px; font-size: 0.9em;"></div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="excelSyncOrderSheet" class="form-label">Order Report Sheet Name</label>
+                                <input type="text" class="form-control" id="excelSyncOrderSheet" value="Order Report"
+                                    placeholder="Default: Order Report">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="excelSyncSourceSheet" class="form-label">Source Sheet Name (WF Closed/Non-WF
+                                    Closed)</label>
+                                <select class="form-select" id="excelSyncSourceSheet">
+                                    <option value="WF Closed">WF Closed</option>
+                                    <option value="Non-WF Closed">Non-WF Closed</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="excelSyncMessage" style="display: none;" class="alert"></div>
+                        <div id="excelSyncResults" style="display: none;" class="mt-3">
+                            <h6>Sync Results:</h6>
+                            <div id="excelSyncResultsList"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="excelSyncProcessBtn" onclick="processExcelSync()">
+                    📋 Process & Sync
+                </button>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <script src="/js/bootstrap.bundle.min.js"></script>
     <script>
         // 检查用户是否已登录
         function checkLoginStatus() {
@@ -1083,27 +1249,27 @@
             }
             return true;
         }
-        
+
         // 在页面加载时检查登录状态
         if (!checkLoginStatus()) {
             // 如果未登录，阻止页面继续加载
-            document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('DOMContentLoaded', function () {
                 document.body.innerHTML = '<div style="text-align: center; padding: 50px;"><h2>Please log in first</h2><p>Redirecting to login page...</p></div>';
             });
         }
-        
+
         // 货币符号映射
         const currencyMap = {
             'wefabricate': '€',
             'centurion': '$',
             'magic_fx': '€'
         };
-        
+
         // 获取公司的货币符号
         function getCurrencySymbol(company) {
             return currencyMap[company] || '';
         }
-        
+
         // 全局变量
         let currentTable = 'wf_open';
         let tableData = [];
@@ -1116,20 +1282,24 @@
         // 分页相关变量
         let currentPage = 1;
         let itemsPerPage = 20;
-        
+
         // 全局发货相关变量
         let selectedItemsForShipment = new Map(); // 存储已选择的项目: key=po_line, value=物料信息
-        
+
+        // 排序相关变量
+        let currentSortColumn = 'created_at';
+        let currentSortOrder = 'desc';
+
         // 初始化页面
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             try {
                 console.log("页面DOM内容加载完成");
-                
+
                 // 检查登录状态
                 if (!checkLoginStatus()) {
                     return;
                 }
-                
+
                 // 显示当前用户
                 const currentUser = JSON.parse(localStorage.getItem('currentUser'));
                 if (currentUser) {
@@ -1137,24 +1307,24 @@
                     const logoutBtn = document.getElementById('logoutBtn');
                     const loginLink = document.getElementById('loginLink');
                     const registerLink = document.getElementById('registerLink');
-                    
+
                     if (currentUserElement) {
                         currentUserElement.textContent = currentUser.email;
                     }
-                    
+
                     if (logoutBtn) {
                         logoutBtn.style.display = 'inline-block';
                     }
-                    
+
                     if (loginLink) {
                         loginLink.style.display = 'none';
                     }
-                    
+
                     if (registerLink) {
                         registerLink.style.display = 'none';
                     }
                 }
-                
+
                 // 检查必要的DOM元素是否存在
                 const requiredElements = [
                     'tableSelect',
@@ -1167,34 +1337,34 @@
                     'recordCount',
                     'paginationContainer'
                 ];
-                
+
                 requiredElements.forEach(elementId => {
                     const element = document.getElementById(elementId);
                     if (!element) {
                         console.warn(`未找到id为'${elementId}'的元素`);
                     }
                 });
-                
+
                 loadTableData();
-                
+
                 // 监听表选择变化
                 const tableSelect = document.getElementById('tableSelect');
                 if (tableSelect) {
-                    tableSelect.addEventListener('change', function() {
+                    tableSelect.addEventListener('change', function () {
                         currentTable = this.value;
                         // 清除过滤器
                         clearAllFilters();
                         loadTableData();
                     });
                 }
-                
+
                 // 监听全局键盘事件
-                document.addEventListener('keydown', function(event) {
+                document.addEventListener('keydown', function (event) {
                     // 避免在输入框中按键时触发全局事件
                     if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
                         return;
                     }
-                    
+
                     if (currentEditingCell) {
                         if (event.key === 'Escape') {
                             // ESC键取消编辑
@@ -1223,21 +1393,21 @@
                         }
                     }
                 });
-                
+
                 // 添加退出按钮事件监听
                 const logoutBtn = document.getElementById('logoutBtn');
                 if (logoutBtn) {
-                    logoutBtn.addEventListener('click', function() {
+                    logoutBtn.addEventListener('click', function () {
                         localStorage.removeItem('authToken');
                         localStorage.removeItem('currentUser');
                         window.location.href = '/login.html';
                     });
                 }
-                
+
                 // 为确认模态框添加隐藏事件监听，确保正常关闭
                 const confirmModal = document.getElementById('confirmModal');
                 if (confirmModal) {
-                    confirmModal.addEventListener('hidden.bs.modal', function() {
+                    confirmModal.addEventListener('hidden.bs.modal', function () {
                         // 磨除所有 backdrop
                         document.querySelectorAll('.modal-backdrop').forEach(el => {
                             el.remove();
@@ -1247,13 +1417,13 @@
                         document.body.style.paddingRight = '';
                     });
                 }
-                
+
                 console.log("页面初始化完成");
             } catch (error) {
                 console.error("页面初始化出错:", error);
             }
         });
-        
+
         // 带认证的fetch函数
         function authenticatedFetch(url, options = {}) {
             // 获取存储的token
@@ -1263,22 +1433,22 @@
                 window.location.href = '/login.html';
                 throw new Error('未登录');
             }
-            
+
             // 添加认证头
             options.headers = options.headers || {};
             options.headers['Authorization'] = `Bearer ${token}`;
-            
+
             // 添加用户邮箱头
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
             if (currentUser && currentUser.email) {
                 options.headers['X-User-Email'] = currentUser.email;
             }
-            
+
             // 如果body是FormData，不要手动设置Content-Type（浏览器会自动设置multipart/form-data）
             if (options.body instanceof FormData && options.headers['Content-Type']) {
                 delete options.headers['Content-Type'];
             }
-            
+
             return fetch(url, options)
                 .then(response => {
                     if (response.status === 401) {
@@ -1298,9 +1468,9 @@
                     throw error;
                 });
 
-                
+
         }
-        
+
         // 获取表的列名
         function getColumnNames(tableName) {
             // 根据表名返回对应的列顺序
@@ -1311,11 +1481,11 @@
                 'non_wf_open': ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date', 'eta_wfsz', 'shipping_mode', 'comment', 'po_placed_date', 'record_no', 'shipping_cost', 'tracking_no', 'so_number', 'company'],
                 'non_wf_closed': ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date', 'eta_wfsz', 'shipping_mode', 'comment', 'po_placed_date', 'purchaser', 'shipping_cost', 'tracking_no', 'so_number', 'company']
             };
-            
+
             // 返回对应表的列顺序，如果没有定义则返回默认顺序
             return tableColumns[tableName] || ['po', 'pn', 'line', 'po_line', 'description', 'qty', 'net_price', 'total_price', 'req_date_wf', 'po_placed_date', 'purchaser', 'company'];
         }
-        
+
         // 获取列的显示名称
         function getColumnDisplayName(columnName) {
             const displayNameMap = {
@@ -1326,33 +1496,22 @@
                 'po_placed_date': 'placed_date',
                 'shipping_cost': 'ship_cost'
             };
-            
+
             return displayNameMap[columnName] || columnName;
         }
-        
+
         // 加载表数据
         function loadTableData() {
             showStatus('Loading data...', 'loading');
-            
+
             // 清除选择的发货项目
             selectedItemsForShipment.clear();
-            
+
             authenticatedFetch(`/api/tables/${currentTable}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         tableData = data.data;
-                        // 确保数据按update_at降序排列（最新更新的数据优先）
-                        // 检查所有记录中是否有任何记录有update_at字段
-                        const hasUpdateAtField = tableData && tableData.length > 0 && tableData.some(row => row.update_at);
-                        if (hasUpdateAtField) {
-                            tableData.sort((a, b) => {
-                                const dateA = a.update_at ? new Date(a.update_at).getTime() : 0;
-                                const dateB = b.update_at ? new Date(b.update_at).getTime() : 0;
-                                console.log(`排序: ${a.po_line || 'unknown'} (${a.update_at}) = ${dateA}, ${b.po_line || 'unknown'} (${b.update_at}) = ${dateB}, 结果=${dateB - dateA}`);
-                                return dateB - dateA; // 按更新时间降序
-                            });
-                        }
                         filteredData = [...tableData]; // 初始化过滤数据
                         // 根据表名获取正确的列顺序
                         columnNames = getColumnNames(currentTable);
@@ -1374,26 +1533,26 @@
                     showStatus(`Data loading failed: ${error}`, 'error');
                 });
         }
-        
+
         // ... existing code ...
-        
+
         // 自动调整列宽
         function adjustColumnWidths() {
             const table = document.querySelector('.table');
             if (!table) return;
-            
+
             const rows = table.querySelectorAll('tbody tr');
             if (rows.length === 0) return;
-            
+
             const headerCells = table.querySelectorAll('thead th');
             const maxWidths = new Map();
             const minColumnWidth = 80; // 最小列宽
-            
+
             // 设置特定列的预设最大宽度
             const columnMaxWidths = {
                 'description': 140,
                 'comment': 150,
-                'po': 110,
+                'po': 130,
                 'pn': 110,
                 'line': 50,
                 'po_line': 110,
@@ -1420,26 +1579,27 @@
                 'dep_date': 90,
                 'Actions': 130
             };
-            
+
             // 遍历表头获取列名
             headerCells.forEach((th, colIndex) => {
                 const columnName = th.textContent.trim();
-                
+
                 // Actions列单单独处理
                 if (columnName === 'Actions') {
                     // 根据表类型动态设置宽度: open表不需要退货按钮, 所以宽度较小; closed表有退货按钮, 需要更大的宽度
                     const isOpen = (currentTable === 'wf_open' || currentTable === 'non_wf_open');
-                    const actionWidth = isOpen ? 65 : 140;
+                    const actionWidth = isOpen ? 50 : 140;
                     th.style.width = actionWidth + 'px';
                     th.style.minWidth = actionWidth + 'px';
                     th.style.maxWidth = actionWidth + 'px';
                     th.style.fontSize = '0.9rem';
                     return;
                 }
-                
+
                 let maxWidth = columnMaxWidths[columnName] || 150;
-                let width = columnName.length * 8 + 16; // 先用标题宽度
-                
+                // Add extra buffer for sort indicator (approx 20px)
+                let width = columnName.length * 8 + 36;
+
                 // 计算该列中所有内容的最大宽度
                 rows.forEach(row => {
                     const cells = row.querySelectorAll('td');
@@ -1451,12 +1611,12 @@
                         width = Math.max(width, estimatedWidth);
                     }
                 });
-                
+
                 // 取最小值和设定的最大值
                 const finalWidth = Math.min(Math.max(width, minColumnWidth), maxWidth);
                 maxWidths.set(colIndex, finalWidth);
             });
-            
+
             // 应用列宽
             headerCells.forEach((th, colIndex) => {
                 const width = maxWidths.get(colIndex);
@@ -1470,7 +1630,7 @@
                     th.style.fontSize = '0.9rem';
                 }
             });
-            
+
             rows.forEach(row => {
                 const cells = row.querySelectorAll('td');
                 cells.forEach((cell, colIndex) => {
@@ -1484,20 +1644,25 @@
                         cell.style.maxWidth = actionWidth + 'px';
                         return;
                     }
-                    
+
                     const width = maxWidths.get(colIndex);
                     if (width) {
                         cell.style.width = width + 'px';
                         cell.style.minWidth = width + 'px';
                         cell.style.maxWidth = width + 'px';
+                        cell.style.whiteSpace = 'nowrap'; // Enforce nowrap
+                        cell.style.overflow = 'hidden';
+                        cell.style.textOverflow = 'ellipsis';
                     }
                 });
             });
         }
-        
+
         // 渲染表格
         function renderTable() {
             renderTableHeader();
+            // 确保在渲染前应用当前排序
+            filteredData = sortData(filteredData);
             renderTableBody();
             renderFilterRow();  // 恢复过滤行渲染
             updateRecordCount();
@@ -1506,39 +1671,39 @@
             // 应用自动列宽
             setTimeout(() => adjustColumnWidths(), 0);
         }
-        
+
         // 渲染表体
         function renderTableBody() {
             const body = document.getElementById('tableBody');
             body.innerHTML = '';
-            
+
             // 计算分页数据
             const startIndex = (currentPage - 1) * itemsPerPage;
             const endIndex = Math.min(startIndex + itemsPerPage, filteredData.length);
             const paginatedData = filteredData.slice(startIndex, endIndex);
-            
+
             let tableHtml = '';
             paginatedData.forEach((row, index) => {
                 // 使用实际的行索引而不是分页后的索引
                 const rowIndex = startIndex + index;
-                
+
                 // 检查 qty*net_price 是否等于 total_price
                 const qty = parseFloat(row.qty) || 0;
                 const netPrice = parseFloat(row.net_price) || 0;
                 const totalPrice = parseFloat(row.total_price) || 0;
                 const calculatedTotal = qty * netPrice;
-                
+
                 // 检查计算值是否与总价匹配（考虑浮点数精度问题）
                 const isInvalidRow = qty > 0 && netPrice > 0 && Math.abs(calculatedTotal - totalPrice) > 0.01;
-                
+
                 // 构建行的class属性
                 let rowClass = '';
                 if (isInvalidRow) {
                     rowClass = 'invalid-row';
                 }
-                
+
                 let rowHtml = `<tr data-row-index="${rowIndex}" class="${rowClass}">`;
-                
+
                 // 先添加操作列
                 const pn = row['pn'] || '';
                 const po = row['po'] || '';
@@ -1546,18 +1711,18 @@
                 const id = row['id'] || '';
                 const rowQty = parseFloat(row.qty) || 0;
                 const isOpenTable = (currentTable === 'wf_open' || currentTable === 'non_wf_open');
-                
+
                 rowHtml += `<td style="text-align: center;" class="action-cell">`;
-                
+
                 // 复选框 (所有表格都显示)
                 const isChecked = selectedItemsForShipment.has(poLine) ? 'checked' : '';
                 rowHtml += `<input type="checkbox" class="shipment-checkbox" data-po-line="${poLine}" data-po="${po}" data-pn="${pn}" data-qty="${rowQty}" data-row-index="${rowIndex}" ${isChecked} onchange="handleShipmentCheckboxChange()" />`;
-                
+
                 // 删除按钮 - 根据表类型传递不同的主键
                 const deleteKey = isOpenTable ? poLine : id;
                 const deleteKeyDisplay = isOpenTable ? poLine : id;
                 rowHtml += `<button class="delete-btn" onclick="deleteRowRecord('${deleteKey}', '${currentTable}')" title="删除此记录">✕</button>`;
-                
+
                 // 退货按钮 (仅在closed表显示)
                 const isClosedTable = (currentTable === 'wf_closed' || currentTable === 'non_wf_closed');
                 if (isClosedTable) {
@@ -1567,7 +1732,7 @@
                     const descriptionStr = String(row.description || '')
                         .replace(/\\/g, '\\\\\\\\')
                         .replace(/"/g, '\\"')
-                        .replace(/'/g, "\\'") 
+                        .replace(/'/g, "\\'")
                         .replace(/\n/g, ' ')
                         .replace(/\r/g, '')
                         .substring(0, 100);
@@ -1575,7 +1740,7 @@
                     const recordIdValue = id && id !== '' ? String(id) : String(rowIndex);
                     rowHtml += `<button class="btn btn-sm return-shipment-btn" onclick="openReturnShipmentModal('${poLineStr}', '${descriptionStr}', ${shipmentQty}, '${currentTable}', '${recordIdValue}')" title="退货" style="padding: 4px 6px; font-size: 12px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">↩</button>`;
                 }
-                
+
                 rowHtml += `</td>`;
                 // 再添加数据列
                 columnNames.forEach(col => {
@@ -1600,7 +1765,7 @@
                     } else if (value === null || value === 'None' || value === 'null') {
                         displayValue = '';
                     }
-                    
+
                     // 为价格字段添加货币符号
                     if ((col === 'net_price' || col === 'total_price' || col === 'shipping_cost') && displayValue !== '') {
                         const company = row['company'] || '';
@@ -1610,7 +1775,7 @@
                             if (col === 'shipping_cost') {
                                 const currentShippingCost = parseFloat(displayValue);
                                 const currentBatchNo = row['shipment_batch_no'];
-                                
+
                                 // 统计同一批次中是否有多条记录共享运费
                                 // 只有当存在shipment_batch_no且有多条记录时，才显示shared:
                                 let shouldShowShared = false;
@@ -1619,16 +1784,16 @@
                                     const sameBatchAndCostCount = paginatedData.filter(r => {
                                         const rBatchNo = r['shipment_batch_no'];
                                         const rShippingCost = parseFloat(r.shipping_cost || 0);
-                                        return rBatchNo === currentBatchNo && 
-                                               rShippingCost === currentShippingCost && 
-                                               r.shipping_cost !== null && 
-                                               r.shipping_cost !== '';
+                                        return rBatchNo === currentBatchNo &&
+                                            rShippingCost === currentShippingCost &&
+                                            r.shipping_cost !== null &&
+                                            r.shipping_cost !== '';
                                     }).length;
-                                    
+
                                     // 同一批次中有多条记录时显示shared:
                                     shouldShowShared = sameBatchAndCostCount > 1;
                                 }
-                                
+
                                 if (shouldShowShared) {
                                     displayValue = 's:' + currency + currentShippingCost;
                                 } else {
@@ -1640,19 +1805,19 @@
                             }
                         }
                     }
-                    
+
                     // 处理company字段：改布无效值为空字符串
                     if (col === 'company' && (displayValue === 'undefined' || displayValue === 'null' || displayValue === 'None')) {
                         displayValue = '';
                     }
-                    
+
                     // 确保特殊字符被正确转义
                     const escapedValue = String(displayValue).replace(/&/g, '&amp;')
                         .replace(/</g, '&lt;')
                         .replace(/>/g, '&gt;')
                         .replace(/"/g, '&quot;')
                         .replace(/'/g, '&#039;');
-                    
+
                     // 为 description 和 comment 列添加特殊的类名以支持换行
                     let cellClass = 'editable-cell';
                     if (col === 'description') {
@@ -1664,22 +1829,22 @@
                     } else if (col === 'po' || col === 'pn' || col === 'eta_wfsz') {
                         cellClass += ' no-ellipsis-cell';
                     }
-                    
+
                     rowHtml += `<td class="${cellClass}" data-column="${col}" data-row-id="${isClosedTable ? row.id : rowIndex}" data-row="${rowIndex}" ondblclick="editCell(this)"><span>${escapedValue}</span></td>`;
                 });
-                
+
                 rowHtml += '</tr>';
                 tableHtml += rowHtml;
             });
-            
+
             body.innerHTML = tableHtml;
-            
+
             paginatedData.forEach((row, index) => {
                 const checkQty = parseFloat(row.qty) || 0;
                 const netPrice = parseFloat(row.net_price) || 0;
                 const totalPrice = parseFloat(row.total_price) || 0;
                 const calculatedTotal = checkQty * netPrice;
-                
+
                 // 检查计算值是否与总价匹配（考虑浮点数精度问题）
                 if (checkQty > 0 && netPrice > 0 && Math.abs(calculatedTotal - totalPrice) > 0.01) {
                     const actualRowIndex = startIndex + index;
@@ -1689,27 +1854,119 @@
                     }
                 }
             });
-            
+
             // 更新发货按钮区域显示
             updateShipmentButtonArea();
         }
-        
-        // 渲染表头
+
+        // 渲染表头 (Refactored to use DOM API for events)
         function renderTableHeader() {
             const header = document.getElementById('tableHeader');
-            header.innerHTML = '';
-            
-            let headerHtml = '<tr>';
-            headerHtml += '<th>Actions</th>';
+            header.innerHTML = ''; // Clear existing
+
+            const tr = document.createElement('tr');
+
+            // Actions Column
+            const actionTh = document.createElement('th');
+            actionTh.textContent = 'Actions';
+            tr.appendChild(actionTh);
+
+            // Data Columns
             columnNames.forEach(col => {
+                const th = document.createElement('th');
                 const displayName = getColumnDisplayName(col);
-                headerHtml += `<th>${displayName}</th>`;
+                const isCurrentSort = currentSortColumn === col;
+                const sortIndicator = isCurrentSort ? (currentSortOrder === 'asc' ? ' ▲' : ' ▼') : '';
+
+                th.textContent = displayName + sortIndicator;
+                th.style.cursor = 'pointer';
+                th.style.userSelect = 'none';
+                th.title = `Click to sort by ${displayName}`;
+
+                // Add click listener directly
+                th.addEventListener('click', function () {
+                    console.log(`[DEBUG] Header clicked: ${col}`);
+                    handleSort(col);
+                });
+
+                tr.appendChild(th);
             });
-            headerHtml += '</tr>';
-            
-            header.innerHTML = headerHtml;
+
+            header.appendChild(tr);
         }
-        
+
+        // 处理排序
+        function handleSort(columnName) {
+            console.log(`[DEBUG] handleSort clicked for: ${columnName}`);
+            if (currentSortColumn === columnName) {
+                // 如果点击相同列，切换排序顺序
+                currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+            } else {
+                // 如果点击新列，默认升序（如果是update_at则默认降序）
+                currentSortColumn = columnName;
+                currentSortOrder = (columnName === 'update_at') ? 'desc' : 'asc';
+            }
+
+            console.log(`[DEBUG] New Sort State: ${currentSortColumn} (${currentSortOrder})`);
+
+            // 重新渲染表头（显示指示器）
+            renderTableHeader();
+            // 应用过滤和排序
+            applyAllFilters();
+        }
+        // Expose to window to ensure onclick works
+        window.handleSort = handleSort;
+
+        // 数据排序逻辑
+        function sortData(data) {
+            if (!currentSortColumn) return data;
+
+            return data.sort((a, b) => {
+                let valA = a[currentSortColumn];
+                let valB = b[currentSortColumn];
+
+                // 处理空值
+                if (valA === null || valA === undefined || valA === '') return 1;
+                if (valB === null || valB === undefined || valB === '') return -1;
+
+                // 处理日期逻辑
+                if (dateColumns.includes(currentSortColumn)) {
+                    valA = new Date(extractDateOnly(valA)).getTime() || 0;
+                    valB = new Date(extractDateOnly(valB)).getTime() || 0;
+                } else if (!isNaN(valA) && !isNaN(valB)) {
+                    // 处理数字逻辑
+                    valA = parseFloat(valA);
+                    valB = parseFloat(valB);
+                } else {
+                    // 处理字符串逻辑
+                    valA = String(valA).toLowerCase();
+                    valB = String(valB).toLowerCase();
+                }
+
+                if (valA < valB) return currentSortOrder === 'asc' ? -1 : 1;
+                if (valA > valB) return currentSortOrder === 'asc' ? 1 : -1;
+
+                // 次级排序逻辑 (Tie-breaking)
+                // 如果主排序列的值相等，则使用 PO (Asc) -> Line (Asc) 作为次级排序
+                if (valA === valB) {
+                    // 比较 PO
+                    const poA = String(a.po || '').toLowerCase();
+                    const poB = String(b.po || '').toLowerCase();
+                    if (poA < poB) return -1;
+                    if (poA > poB) return 1;
+
+                    // 比较 Line
+                    // 尝试将 Line 转换为数字进行比较
+                    const lineA = parseFloat(a.line) || 0;
+                    const lineB = parseFloat(b.line) || 0;
+                    if (lineA < lineB) return -1;
+                    if (lineA > lineB) return 1;
+                }
+
+                return 0;
+            });
+        }
+
         // 渲染过滤行
         function renderFilterRow() {
             const filterRow = document.getElementById('filterRow');
@@ -1717,23 +1974,23 @@
                 console.error('Filter row element not found');
                 return;
             }
-            
+
             // 清空过滤行
             let filterHtml = '';
-            
+
             // 为操作列添加清除按钮
             filterHtml += `
-                <div>
-                    <button class="btn btn-sm btn-outline-secondary clear-filter-btn" onclick="clearAllFilters()">
+                <div style="min-width: auto; display: flex; align-items: center;">
+                    <button class="btn btn-sm btn-outline-secondary clear-filter-btn" onclick="clearAllFilters()" title="Clear all filters">
                        ❌ Clear
                     </button>
                 </div>
             `;
-            
+
             // 为每个数据列创建过滤器
             columnNames.forEach((col, index) => {
                 const isDateColumn = dateColumns.includes(col);
-                
+
                 if (isDateColumn) {
                     // 日期列：创建按钮打开弹窗 + 比较模式选择器
                     filterHtml += `
@@ -1764,19 +2021,19 @@
                     `;
                 }
             });
-            
+
             filterRow.innerHTML = filterHtml;
-            
+
             // 设置过滤器事件
             setupFilterEvents();
         }
-        
+
         // 打开日期过滤弹窗
         function openDateFilterModal(column) {
             // 获取当前日期值（从select的data-date属性读取）
             const modeSelect = document.querySelector(`.date-filter-mode[data-column="${column}"]`);
             const currentDate = modeSelect ? modeSelect.getAttribute('data-date') : '';
-            
+
             // 创建弹窗
             const modal = document.createElement('div');
             modal.className = 'modal fade';
@@ -1800,68 +2057,68 @@
                     </div>
                 </div>
             `;
-            
+
             // 添加到页面
             document.body.appendChild(modal);
-            
+
             // 显示弹窗
             const bsModal = new bootstrap.Modal(modal);
             bsModal.show();
-            
+
             // 弹窗关闭后移除
             modal.addEventListener('hidden.bs.modal', () => {
                 modal.remove();
             }, { once: true });
         }
-        
+
         // 确认日期选择
         function confirmDateFilter(column) {
             const dateInput = document.getElementById(`dateFilterInput_${column}`);
             let selectedDate = dateInput.value;
-            
+
             // 将日期格式从 YYYY-MM-DD 转换为 YYYY-MM-DD（确保格式一致）
             if (selectedDate && selectedDate.includes('/')) {
                 // 父换 / 为 -
                 selectedDate = selectedDate.replace(/\//g, '-');
                 console.log(`日期格式转换: ${dateInput.value} => ${selectedDate}`);
             }
-            
+
             // 保存到select的data-date属性
             const modeSelect = document.querySelector(`.date-filter-mode[data-column="${column}"]`);
             if (modeSelect) {
                 modeSelect.setAttribute('data-date', selectedDate);
                 console.log(`保存日期: ${column} = ${selectedDate}`);
             }
-            
+
             // 关闭弹窗
             const modal = bootstrap.Modal.getInstance(document.getElementById(`dateFilterModal_${column}`));
             if (modal) {
                 modal.hide();
             }
-            
+
             // 应用过滤器
             applyAllFilters();
         }
-        
+
         // 过滤表格
         function filterTable(input) {
             // 直接应用过滤器，不使用防抖
             applyAllFilters();
         }
-        
+
         // 应用所有过滤器
         function applyAllFilters() {
             // 获取所有日期过滤器的select元素
             const dateFilterModes = document.querySelectorAll('.date-filter-mode');
-            
+
             // 获取所有文本输入框
             const textFilters = document.querySelectorAll('input[data-column]:not(.date-filter)');
-            
+
             // 保存当前的输入值
             const currentDateValues = {};
             const currentModes = {};
             const currentTextValues = {};
-            
+
             // 从 select 的 data-date 属性读取日期值
             dateFilterModes.forEach(select => {
                 const col = select.getAttribute('data-column');
@@ -1869,56 +2126,56 @@
                 currentModes[col] = select.value;
                 console.log(`保存模式: ${col} = ${select.value}, 日期 = ${currentDateValues[col]}`);
             });
-            
+
             textFilters.forEach(input => {
                 currentTextValues[input.getAttribute('data-column')] = input.value;
             });
-            
+
             // 从原始数据开始过滤以保持日期的原始格式
             filteredData = originalData.map(row => ({ ...row }));
-            
+
             console.log(`开始过滤, 原始数据数: ${filteredData.length}`);
-            
+
             // 先应用日期过滤
             dateFilterModes.forEach(select => {
                 const column = select.getAttribute('data-column');
                 const filterValue = (select.getAttribute('data-date') || '').trim();
                 const mode = select.value || 'equals';
-                
+
                 console.log(`日期过滤: column=${column}, value=${filterValue}, mode=${mode}`);
-                
+
                 if (filterValue) {
                     const beforeCount = filteredData.length;
-                    
+
                     filteredData = filteredData.filter(row => {
                         const cellValue = (row[column] || '').toString().trim();
-                        
+
                         // 空日期不参与过滤 - 返回 false 排除空值
                         if (!cellValue || cellValue === 'undefined') {
                             return false;
                         }
-                        
+
                         // 提取日期部分（处理可能的时间和其他沄污）
                         // 设定仄正格式为 YYYY-MM-DD
                         const cellDate = extractDateOnly(cellValue);
                         const result = compareDate(cellDate, filterValue, mode);
-                        
+
                         if (result) {
                             console.log(`  ✓ ${cellDate} ${mode} ${filterValue}`);
                         }
                         return result;
                     });
-                    
+
                     const afterCount = filteredData.length;
                     console.log(`  结果: ${beforeCount} -> ${afterCount}`);
                 }
             });
-            
+
             // 然后应用文本过滤
             textFilters.forEach(input => {
                 const column = input.getAttribute('data-column');
                 const filterValue = input.value.trim().toLowerCase();
-                
+
                 if (filterValue) {
                     filteredData = filteredData.filter(row => {
                         const cellValue = (row[column] || '').toString().toLowerCase();
@@ -1926,19 +2183,12 @@
                     });
                 }
             });
-            
+
             console.log(`最终结果: ${filteredData.length}`);
-            
-            // 过滤完成后，保持按update_at降序排列（最新数据在最前面）
-            const hasUpdateAtField = filteredData.length > 0 && filteredData.some(row => row.update_at);
-            if (hasUpdateAtField) {
-                filteredData.sort((a, b) => {
-                    const dateA = a.update_at ? new Date(a.update_at).getTime() : 0;
-                    const dateB = b.update_at ? new Date(b.update_at).getTime() : 0;
-                    return dateB - dateA;
-                });
-            }
-            
+
+            // 应用排序
+            filteredData = sortData(filteredData);
+
             // 重置到第一页并重新渲染
             currentPage = 1;
             renderTableBody();
@@ -1947,16 +2197,16 @@
             // 保持已选项目的UI状态
             setTimeout(updateSelectedItemsDisplay, 100);
         }
-        
+
         // 删除这个重复的定义，使用下面的版本
-        
+
         // 初始化表格
         function initTable() {
             renderTableBody();
             updateRecordCount();
             renderPagination();
         }
-        
+
         // 初始化数据
         function initData() {
             tableData = [
@@ -1981,21 +2231,21 @@
                 { name: 'Sam', age: 115, date: '2024-01-10' },
                 { name: 'Tina', age: 120, date: '2024-01-15' },
             ];
-            
+
             columns = Object.keys(tableData[0]);
-            
+
             initTable();
         }
-        
+
         // 提取YYYY-MM-DD格式的日期
         function extractDateOnly(dateString) {
             if (!dateString) return '';
-            
+
             // 是否已经YYYY-MM-DD格式
             if (dateString.match(/^\d{4}-\d{2}-\d{2}/)) {
                 return dateString.substring(0, 10);
             }
-            
+
             // 是否是GMT或其他日期字符串，需要解析
             try {
                 const date = new Date(dateString);
@@ -2009,14 +2259,14 @@
             } catch (e) {
                 console.warn(`日期解析失败: ${dateString}`);
             }
-            
+
             return dateString;
         }
-        
+
         // 比较日期的辅助函数
         function compareDate(cellDate, filterDate, mode) {
             console.log(`compareDate: cellDate=${cellDate}, filterDate=${filterDate}, mode=${mode}`);
-            
+
             // 使用字符串比较（YYYY-MM-DD格式）
             if (mode === 'equals') {
                 // 当天：完全相等
@@ -2034,10 +2284,10 @@
                 console.log(`  on_or_after: ${cellDate} >= ${filterDate} = ${result}`);
                 return result;
             }
-            
+
             return true;
         }
-        
+
         // 为过滤器添加回车键事件
         function setupFilterEvents() {
             const filterInputs = document.querySelectorAll('input[data-column]');
@@ -2048,66 +2298,61 @@
                 input.addEventListener('keyup', handleFilterKeyUp);
             });
         }
-        
+
         // 处理过滤器的keyup事件
         function handleFilterKeyUp(event) {
             if (event.key === 'Enter') {
                 applyAllFilters();
             }
         }
-        
+
         // 清除所有过滤器
         function clearAllFilters() {
             // 清除所有日期输入框的值
             const dateFilters = document.querySelectorAll('input.date-filter');
             const dateFilterModes = document.querySelectorAll('.date-filter-mode');
             const textFilters = document.querySelectorAll('input[data-column]:not(.date-filter)');
-            
+
             dateFilters.forEach(input => {
                 input.value = '';
             });
-            
+
             dateFilterModes.forEach(select => {
                 select.value = 'equals';
             });
-            
+
             textFilters.forEach(input => {
                 input.value = '';
             });
-            
+
             // 重置过滤数据为原始数据
             filteredData = originalData.map(row => ({ ...row }));
-            
-            // 保持按update_at降序排列
-            const hasUpdateAtField = filteredData.length > 0 && filteredData.some(row => row.update_at);
-            if (hasUpdateAtField) {
-                filteredData.sort((a, b) => {
-                    const dateA = a.update_at ? new Date(a.update_at).getTime() : 0;
-                    const dateB = b.update_at ? new Date(b.update_at).getTime() : 0;
-                    return dateB - dateA;
-                });
-            }
-            
+
+            // 重置排序为默认：created_at desc
+            currentSortColumn = 'created_at';
+            currentSortOrder = 'desc';
+            filteredData = sortData(filteredData);
+
             // 重置到第一页并重新渲染
             currentPage = 1;
             renderTableBody();
             updateRecordCount();
             renderPagination();
         }
-        
+
         // 显示确认对话框
         function showConfirmModal(message, confirmCallback) {
             // 设置模态框内容
             document.getElementById('confirmModalBody').innerHTML = message;
-            
+
             // 设置确认按钮的点击事件
             const confirmButton = document.getElementById('confirmModalButton');
             // 清除之前的事件监听器
             const newConfirmButton = confirmButton.cloneNode(true);
             confirmButton.parentNode.replaceChild(newConfirmButton, confirmButton);
-            
+
             // 添加新的点击事件监听器
-            newConfirmButton.onclick = function() {
+            newConfirmButton.onclick = function () {
                 // 执行确认回调
                 if (confirmCallback && typeof confirmCallback === 'function') {
                     confirmCallback();
@@ -2124,22 +2369,22 @@
                     }
                 }, 50);
             };
-            
+
             // 显示模态框
             const modalElement = document.getElementById('confirmModal');
             const modal = new bootstrap.Modal(modalElement, {
                 backdrop: true,
                 keyboard: true
             });
-            
+
             // 添加Modal关闭事件监听，确保滚动条恢复
-            modalElement.addEventListener('hidden.bs.modal', function() {
+            modalElement.addEventListener('hidden.bs.modal', function () {
                 document.body.style.overflow = 'auto';
             }, { once: true });
-            
+
             modal.show();
         }
-        
+
         // 主动关闭Modal的应急方法
         function closeConfirmModal() {
             const modalElement = document.getElementById('confirmModal');
@@ -2154,14 +2399,14 @@
             document.body.style.paddingRight = '';
             document.body.style.overflow = 'auto';
         }
-        
+
         // 编辑单元格 - 改进版：使用id而不是rowIndex
         function editCell(cell) {
             // 如果点击的是输入框，不执行编辑操作
             if (event && event.target.tagName === 'INPUT') {
                 return;
             }
-            
+
             // 如果有正在编辑的单元格，先取消它的编辑状态
             if (currentEditingCell && currentEditingCell !== cell) {
                 // 恢复单元格显示
@@ -2170,37 +2415,26 @@
                 currentEditingCell.classList.remove('editing-cell');
                 currentEditingCell.classList.add('editable-cell');
             }
-            
+
             // 如果点击的是已经处于编辑状态的单元格，则不做任何操作
             if (cell.classList.contains('editing-cell')) {
                 return;
             }
-            
-            // 改进：对于closed表，使用id；对于其他表，使用rowIndex
-            const isClosedTable = (currentTable === 'wf_closed' || currentTable === 'non_wf_closed');
-            let rowIndex;
-            if (isClosedTable) {
-                const rowId = parseInt(cell.getAttribute('data-row-id'));
-                // 在tableData中查找对应id的索引
-                rowIndex = tableData.findIndex(row => row.id === rowId);
-                if (rowIndex === -1) {
-                    console.error('Cannot find row with id:', rowId);
-                    return;
-                }
-            } else {
-                rowIndex = parseInt(cell.getAttribute('data-row'));
-            }
-            
+
+            // 改进：统一使用rowIndex（对应filteredData的索引），不再区分是否为closed表
+            // updateCellValue函数预期接收的是filteredData的索引
+            const rowIndex = parseInt(cell.getAttribute('data-row'));
+
             const columnName = cell.getAttribute('data-column');
             const currentValue = cell.textContent || '';
-            
+
             // 保存原始值
             cell.setAttribute('data-original-value', currentValue);
-            
+
             // 根据列名判断输入类型
             let inputHtml = '';
             let dateValue = '';
-            
+
             if (dateColumns.includes(columnName)) {
                 // 对于日期字段，确保值格式正确
                 dateValue = currentValue;
@@ -2253,13 +2487,13 @@
                 inputHtml = `<input type="text" value="${currentValue}" 
                                      data-original-value="${currentValue}">`;
             }
-            
+
             cell.innerHTML = inputHtml;
             cell.classList.add('editing-cell');
             cell.classList.remove('editable-cell');
             // 保持 description-cell 或 comment-cell 的样式类在编辑时也适用
             // 这样换行样式在编辑时也能保持
-            
+
             // 聚焦到新创建的输入框
             const input = cell.querySelector('input, textarea, select');
             if (input) {
@@ -2278,9 +2512,9 @@
                     input.select();
                 }
                 input.focus();
-                
+
                 // 为输入框和下拉框都添加键盘事件监听
-                input.addEventListener('keydown', function(event) {
+                input.addEventListener('keydown', function (event) {
                     if (event.key === 'Escape') {
                         event.preventDefault();
                         event.stopPropagation();
@@ -2290,18 +2524,18 @@
                         cell.classList.remove('editing-cell');
                         cell.classList.add('editable-cell');
                         currentEditingCell = null;
-                    } else if (event.key === 'Enter' && input.tagName !== 'TEXTAREA' && input.tagName !== 'SELECT') {
-                        // Enter键仅对非textarea和非select生效
+                    } else if (event.key === 'Enter' && input.tagName !== 'SELECT' && (input.tagName !== 'TEXTAREA' || !event.shiftKey)) {
+                        // Enter键触发保存（Textarea需配合非Shift，否则为换行）
                         event.preventDefault();
                         event.stopPropagation();
-                        // Enter键触发保存逻辑
+
                         const originalValue = input.getAttribute('data-original-value');
                         const currentInputValue = input.value;
-                        
+
                         // 检查值是否有变化
                         if (originalValue !== currentInputValue) {
                             // 弹出确认对话框
-                            showConfirmModal(`Data has been modified. Save changes?<br><strong>Original:</strong> ${originalValue || '(empty)'}<br><strong>New:</strong> ${currentInputValue || '(empty)'}`, function() {
+                            showConfirmModal(`Data has been modified. Save changes?<br><strong>Original:</strong> ${originalValue || '(empty)'}<br><strong>New:</strong> ${currentInputValue || '(empty)'}`, function () {
                                 // 确认保存
                                 cell.textContent = currentInputValue || '';
                                 cell.classList.remove('editing-cell');
@@ -2316,24 +2550,17 @@
                             cell.classList.add('editable-cell');
                             currentEditingCell = null;
                         }
-                    } else if (event.key === 'Enter' && event.ctrlKey && input.tagName === 'TEXTAREA') {
-                        // Ctrl+Enter为textarea预留的保存键
-                        event.preventDefault();
-                        event.stopPropagation();
-                        // Ctrl+Enter键触发保存逻辑
-                        const originalValue = input.getAttribute('data-original-value');
-                        const currentInputValue = input.value;
                     } else if (event.key === 'Enter' && input.tagName === 'SELECT') {
                         // Enter键为select触发保存逻辑
                         event.preventDefault();
                         event.stopPropagation();
                         const originalValue = input.getAttribute('data-original-value');
                         const currentInputValue = input.value;
-                        
+
                         // 检查值是否有变化
                         if (originalValue !== currentInputValue) {
                             // 弹出确认对话框
-                            showConfirmModal(`Data has been modified. Save changes?<br><strong>Original:</strong> ${originalValue || '(empty)'}<br><strong>New:</strong> ${currentInputValue || '(empty)'}`, function() {
+                            showConfirmModal(`Data has been modified. Save changes?<br><strong>Original:</strong> ${originalValue || '(empty)'}<br><strong>New:</strong> ${currentInputValue || '(empty)'}`, function () {
                                 // 确认保存
                                 cell.textContent = currentInputValue || '';
                                 cell.classList.remove('editing-cell');
@@ -2350,16 +2577,16 @@
                         }
                     }
                 });
-                
+
                 // 监听输入框失去焦点事件（包括select）
-                input.addEventListener('blur', function(e) {
+                input.addEventListener('blur', function (e) {
                     // 对于select元素，blur时直接保存
                     if (input.tagName === 'SELECT') {
                         const originalValue = input.getAttribute('data-original-value');
                         const currentInputValue = input.value;
-                        
+
                         if (originalValue !== currentInputValue) {
-                            showConfirmModal(`Data has been modified. Save changes?<br><strong>Original:</strong> ${originalValue || '(empty)'}<br><strong>New:</strong> ${currentInputValue || '(empty)'}`, function() {
+                            showConfirmModal(`Data has been modified. Save changes?<br><strong>Original:</strong> ${originalValue || '(empty)'}<br><strong>New:</strong> ${currentInputValue || '(empty)'}`, function () {
                                 cell.textContent = currentInputValue || '';
                                 cell.classList.remove('editing-cell');
                                 cell.classList.add('editable-cell');
@@ -2374,18 +2601,18 @@
                         }
                         return;
                     }
-                    
+
                     // 延迟执行，确保不会与点击事件冲突
                     setTimeout(() => {
                         // 检查单元格是否仍处于编辑状态
                         if (cell.classList.contains('editing-cell')) {
                             const originalValue = input.getAttribute('data-original-value');
                             const currentInputValue = input.value;
-                            
+
                             // 检查值是否有变化
                             if (originalValue !== currentInputValue) {
                                 // 弹出确认对话框
-                                showConfirmModal(`Data has been modified. Save changes?<br><strong>Original:</strong> ${originalValue || '(empty)'}<br><strong>New:</strong> ${currentInputValue || '(empty)'}`, function() {
+                                showConfirmModal(`Data has been modified. Save changes?<br><strong>Original:</strong> ${originalValue || '(empty)'}<br><strong>New:</strong> ${currentInputValue || '(empty)'}`, function () {
                                     // 确认保存
                                     cell.textContent = currentInputValue || '';
                                     cell.classList.remove('editing-cell');
@@ -2404,80 +2631,106 @@
                     }, 100);
                 });
             }
-            
+
             // 设置当前编辑的单元格
             currentEditingCell = cell;
         }
-        
+
         // 更新单元格值
         function updateCellValue(rowIndex, columnName, value) {
-            // 处理特殊值
-            if (value === 'null' || value === 'None' || value === 'nan') {
-                tableData[rowIndex][columnName] = null;
+            // 使用 filteredData 而不是 tableData，因为 rowIndex 是基于当前视图的
+            const currentRow = filteredData[rowIndex];
+            if (!currentRow) return;
+
+            // 确定主键：对于closed表使用id，对于open表使用po_line
+            const isClosedTable = (currentTable === 'wf_closed' || currentTable === 'non_wf_closed');
+            const isOpenTable = (currentTable === 'wf_open' || currentTable === 'non_wf_open');
+
+            let primaryKeyValue;
+            if (isClosedTable) {
+                primaryKeyValue = currentRow.id;
+            } else if (isOpenTable) {
+                primaryKeyValue = currentRow.po_line;
             } else {
-                // 对于shipping_cost字段，提取数值部分（去掉s:前缀和货币符号）
-                if (columnName === 'shipping_cost') {
-                    // 移除 "s:" 前缀
-                    let cleanValue = value.replace(/^s:/, '');
-                    // 提取纯数值（移除货币符号）
-                    cleanValue = cleanValue.replace(/[€$]/g, '').trim();
-                    // 如果还有内容，使用清理后的值；否则使用原值
-                    tableData[rowIndex][columnName] = cleanValue || value;
-                } else {
-                    tableData[rowIndex][columnName] = value;
-                }
+                primaryKeyValue = currentRow.pn || currentRow.PN;
             }
-            
+
+            if (!primaryKeyValue) {
+                showStatus('Cannot save: missing primary key value', 'error');
+                return;
+            }
+
+            // 在 tableData 中找到正确的记录索引 (Fix for sorting/filtering issue)
+            const tableDataIndex = tableData.findIndex(r =>
+                isClosedTable ? r.id === currentRow.id : r.po_line === currentRow.po_line
+            );
+
+            // 准备更新值（处理特殊逻辑）
+            let cleanValue = value;
+            if (value === 'null' || value === 'None' || value === 'nan') {
+                cleanValue = null;
+            } else if (columnName === 'shipping_cost') {
+                // Remove "s:" prefix and currency symbols
+                cleanValue = value.replace(/^s:/, '').replace(/[€$]/g, '').trim();
+                // Keep original if empty? Logic below implies we want the clean value
+            } else if (columnName === 'net_price' || columnName === 'total_price') {
+                cleanValue = value.replace(/[€$]/g, '').trim();
+            }
+
+            // 更新 currentRow (Filtered View) 以立即反馈
+            currentRow[columnName] = value;
+
+            // 更新 tableData (Source of Truth) using correct index
+            if (tableDataIndex !== -1) {
+                tableData[tableDataIndex][columnName] = (cleanValue && columnName === 'shipping_cost') ? (cleanValue || value) : value; // Preserve simplified logic from original code regarding shipping_cost
+
+                // If special handling is needed for numeric parsing, apply it to tableData too
+                if (columnName === 'shipping_cost' || columnName === 'net_price' || columnName === 'total_price') {
+                    // Update numeric fields in tableData with parsed numbers if possible
+                    // Note: original code only did string cleaning for shipping_cost in the update block
+                    // We will stick to simply updating the field. The API call handles the type conversion sending.
+                }
+            } else {
+                console.error("Critical: Could not find row in tableData to update!");
+            }
+
             // 检查是否是qty或net_price列，如果是则自动计算total_price
             if (columnName === 'qty' || columnName === 'net_price') {
-                const qty = parseFloat(tableData[rowIndex]['qty']) || 0;
-                const netPrice = parseFloat(tableData[rowIndex]['net_price']) || 0;
+                const qty = parseFloat(currentRow['qty']) || 0;
+                const netPrice = parseFloat(currentRow['net_price']) || 0;
                 const totalPrice = (qty * netPrice).toFixed(2);
-                
+
                 // 更新total_price字段
-                tableData[rowIndex]['total_price'] = totalPrice;
-                
+                currentRow['total_price'] = totalPrice;
+                if (tableDataIndex !== -1) {
+                    tableData[tableDataIndex]['total_price'] = totalPrice;
+                }
+
                 // 更新表格中显示的total_price值
                 const totalCell = document.querySelector(`td[data-column="total_price"][data-row="${rowIndex}"]`);
                 if (totalCell) {
                     totalCell.textContent = totalPrice;
                 }
             }
-            
-            // 确定主键：对于closed表使用id，对于open表使用po_line
-            const row = tableData[rowIndex];
-            const isClosedTable = (currentTable === 'wf_closed' || currentTable === 'non_wf_closed');
-            const isOpenTable = (currentTable === 'wf_open' || currentTable === 'non_wf_open');
-            
-            let primaryKeyValue;
-            if (isClosedTable) {
-                primaryKeyValue = row.id;
-            } else if (isOpenTable) {
-                primaryKeyValue = row.po_line;
-            } else {
-                primaryKeyValue = row.pn || row.PN;
-            }
-            
-            if (!primaryKeyValue) {
-                showStatus('Cannot save: missing primary key value', 'error');
-                return;
-            }
-            
+
             // 准备更新数据
             const updates = {};
-            // 对于shipping_cost字段，提取纯数值进行更新
+            // 对于价格字段，提取纯数值进行更新 (API Payload)
             if (columnName === 'shipping_cost') {
-                let cleanValue = value.replace(/^s:/, '').replace(/[€$]/g, '').trim();
-                updates[columnName] = (cleanValue && !isNaN(parseFloat(cleanValue))) ? parseFloat(cleanValue) : null;
+                let apiVal = value.replace(/^s:/, '').replace(/[€$]/g, '').trim();
+                updates[columnName] = (apiVal && !isNaN(parseFloat(apiVal))) ? parseFloat(apiVal) : null;
+            } else if (columnName === 'net_price' || columnName === 'total_price') {
+                let apiVal = value.replace(/[€$]/g, '').trim();
+                updates[columnName] = (apiVal && !isNaN(parseFloat(apiVal))) ? parseFloat(apiVal) : null;
             } else {
                 updates[columnName] = value === 'null' || value === 'None' || value === 'nan' ? null : value;
             }
-            
+
             // 如果是qty或net_price，同时发送total_price更新
             if (columnName === 'qty' || columnName === 'net_price') {
-                updates['total_price'] = tableData[rowIndex]['total_price'];
+                updates['total_price'] = currentRow['total_price'];
             }
-            
+
             // 对于包含特殊字符（如 / ）的主键，使用查询参数传递以避免路由改写不匹配
             updates.key = primaryKeyValue;
             // 发送更新请求
@@ -2488,35 +2741,57 @@
                 },
                 body: JSON.stringify(updates)
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // 更新原始数据
-                    originalData[rowIndex] = JSON.parse(JSON.stringify(tableData[rowIndex]));
-                    showStatus(`Data saved: ${columnName}`, 'success');
-                    setTimeout(hideStatus, 2000);
-                    
-                    // 重新验证该行数据（仅对数值列）
-                    if (columnName === 'qty' || columnName === 'net_price' || columnName === 'total_price') {
-                        validateRow(rowIndex);
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 更新原始数据 - 必须使用主键查找，不能依赖索引 (Fix for data persistence)
+                        const originalDataIndex = originalData.findIndex(r =>
+                            isClosedTable ? r.id === primaryKeyValue : r.po_line === primaryKeyValue
+                        );
+
+                        // Find the updated record in tableData (which includes our optimistic updates)
+                        const currentTableDataIndex = tableData.findIndex(r =>
+                            isClosedTable ? r.id === primaryKeyValue : r.po_line === primaryKeyValue
+                        );
+
+                        if (originalDataIndex !== -1 && currentTableDataIndex !== -1) {
+                            // Sync originalData with the fully updated tableData record
+                            originalData[originalDataIndex] = JSON.parse(JSON.stringify(tableData[currentTableDataIndex]));
+                        } else if (originalDataIndex !== -1) {
+                            // Fallback: update just the field if tableData record somehow missing
+                            originalData[originalDataIndex][columnName] = (cleanValue && columnName === 'shipping_cost') ? (cleanValue || value) : value;
+                            if (columnName === 'qty' || columnName === 'net_price') {
+                                originalData[originalDataIndex]['total_price'] = currentRow['total_price'];
+                            }
+                        }
+
+                        showStatus(`Data saved: ${columnName}`, 'success');
+                        setTimeout(hideStatus, 2000);
+
+                        // 重新应用过滤器和排序（这会更新 UI）
+                        applyAllFilters();
+
+                        // 重新验证该行数据（仅对数值列）
+                        if (columnName === 'qty' || columnName === 'net_price' || columnName === 'total_price') {
+                            validateRow(rowIndex);
+                        }
+
+                        // 对于shipping_cost，重新加载表格以显示正确的格式化值
+                        if (columnName === 'shipping_cost') {
+                            setTimeout(() => loadTableData(), 500);
+                        }
+                    } else {
+                        showStatus(`Save failed: ${data.message}`, 'error');
+                        setTimeout(hideStatus, 3000);
                     }
-                    
-                    // 对于shipping_cost，重新加载表格以显示正确的格式化值
-                    if (columnName === 'shipping_cost') {
-                        setTimeout(() => loadTableData(), 500);
-                    }
-                } else {
-                    showStatus(`Save failed: ${data.message}`, 'error');
+                })
+                .catch(error => {
+                    console.error('保存数据时出错:', error);
+                    showStatus(`Save failed: ${error.message}`, 'error');
                     setTimeout(hideStatus, 3000);
-                }
-            })
-            .catch(error => {
-                console.error('保存数据时出错:', error);
-                showStatus(`Save failed: ${error.message}`, 'error');
-                setTimeout(hideStatus, 3000);
-            });
+                });
         }
-        
+
         // 保存单元格编辑
         function saveCellEdit(cell) {
             // 触发输入框的change事件来保存值
@@ -2531,23 +2806,23 @@
             cell.classList.remove('editing-cell');
             cell.classList.add('editable-cell');
         }
-        
+
         // 保存单元格数据（自动保存）
         function saveCellData(rowIndex, columnName, value) {
             // 更新数据模型
             tableData[rowIndex][columnName] = value;
-            
+
             // 如果是qty或net_price，同时更新total_price
             if (columnName === 'qty' || columnName === 'net_price') {
                 const qty = parseFloat(tableData[rowIndex]['qty']) || 0;
                 const netPrice = parseFloat(tableData[rowIndex]['net_price']) || 0;
                 tableData[rowIndex]['total_price'] = (qty * netPrice).toFixed(2);
             }
-            
+
             // 确定主键：对于closed表使用id，对于open表使用po_line
             const isClosedTable = (currentTable === 'wf_closed' || currentTable === 'non_wf_closed');
             const isOpenTable = (currentTable === 'wf_open' || currentTable === 'non_wf_open');
-            
+
             let primaryKeyValue;
             if (isClosedTable) {
                 primaryKeyValue = row.id;
@@ -2556,21 +2831,21 @@
             } else {
                 primaryKeyValue = row.pn || row.PN;
             }
-            
+
             if (!primaryKeyValue) {
                 showStatus('Cannot save: missing primary key value', 'error');
                 return;
             }
-            
+
             // 准备更新数据
             const updates = {};
             updates[columnName] = value;
-            
+
             // 如果是qty或net_price，同时发送total_price更新
             if (columnName === 'qty' || columnName === 'net_price') {
                 updates['total_price'] = tableData[rowIndex]['total_price'];
             }
-            
+
             // 对于包含特殊字符（如 / ）的主键，使用查询参数传递以避免路由改写不匹配
             updates.key = primaryKeyValue;
             // 发送更新请求
@@ -2581,37 +2856,37 @@
                 },
                 body: JSON.stringify(updates)
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // 更新原始数据
-                    originalData[rowIndex] = JSON.parse(JSON.stringify(tableData[rowIndex]));
-                    showStatus(`Data saved: ${columnName}`, 'success');
-                    setTimeout(hideStatus, 2000);
-                    
-                    // 重新验证该行数据（仅对数值列）
-                    if (columnName === 'qty' || columnName === 'net_price' || columnName === 'total_price') {
-                        validateRow(rowIndex);
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 更新原始数据
+                        originalData[rowIndex] = JSON.parse(JSON.stringify(tableData[rowIndex]));
+                        showStatus(`Data saved: ${columnName}`, 'success');
+                        setTimeout(hideStatus, 2000);
+
+                        // 重新验证该行数据（仅对数值列）
+                        if (columnName === 'qty' || columnName === 'net_price' || columnName === 'total_price') {
+                            validateRow(rowIndex);
+                        }
+                    } else {
+                        showStatus(`Save failed: ${data.message}`, 'error');
+                        setTimeout(hideStatus, 3000);
                     }
-                } else {
-                    showStatus(`Save failed: ${data.message}`, 'error');
+                })
+                .catch(error => {
+                    console.error('保存数据时出错:', error);
+                    showStatus(`Save failed: ${error.message}`, 'error');
                     setTimeout(hideStatus, 3000);
-                }
-            })
-            .catch(error => {
-                console.error('保存数据时出错:', error);
-                showStatus(`Save failed: ${error.message}`, 'error');
-                setTimeout(hideStatus, 3000);
-            });
+                });
         }
-        
+
         // 实时保存单元格值到数据库
         function saveCellValueToDatabase(rowIndex, columnName, value) {
             // 获取要更新的数据
             const rowData = tableData[rowIndex];
             const isClosedTable = (currentTable === 'wf_closed' || currentTable === 'non_wf_closed');
             const isOpenTable = (currentTable === 'wf_open' || currentTable === 'non_wf_open');
-            
+
             let primaryKeyValue;
             if (isClosedTable) {
                 primaryKeyValue = rowData.id;
@@ -2620,16 +2895,16 @@
             } else {
                 primaryKeyValue = rowData.pn;
             }
-            
+
             // 构造更新数据
             const updates = {};
             updates[columnName] = value;
-            
+
             // 如果是qty或net_price，同时更新total_price
             if (columnName === 'qty' || columnName === 'net_price') {
                 updates['total_price'] = tableData[rowIndex]['total_price'];
             }
-            
+
             // 对于包含特殊字符（如 / ）的主键，使用查询参数传递以避免路由改写不匹配
             updates.key = primaryKeyValue;
             // 发送更新请求
@@ -2640,28 +2915,28 @@
                 },
                 body: JSON.stringify(updates)
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // 更新原始数据
-                    originalData[rowIndex] = JSON.parse(JSON.stringify(tableData[rowIndex]));
-                    showStatus(`Data saved: ${columnName}`, 'success');
-                    setTimeout(hideStatus, 2000);
-                    
-                    // 重新验证该行数据（仅对数值列）
-                    if (columnName === 'qty' || columnName === 'net_price' || columnName === 'total_price') {
-                        validateRow(rowIndex);
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 更新原始数据
+                        originalData[rowIndex] = JSON.parse(JSON.stringify(tableData[rowIndex]));
+                        showStatus(`Data saved: ${columnName}`, 'success');
+                        setTimeout(hideStatus, 2000);
+
+                        // 重新验证该行数据（仅对数值列）
+                        if (columnName === 'qty' || columnName === 'net_price' || columnName === 'total_price') {
+                            validateRow(rowIndex);
+                        }
+                    } else {
+                        showStatus(`Save failed: ${data.message}`, 'error');
+                        setTimeout(hideStatus, 3000);
                     }
-                } else {
-                    showStatus(`Save failed: ${data.message}`, 'error');
+                })
+                .catch(error => {
+                    console.error('保存数据时出错:', error);
+                    showStatus(`Save failed: ${error.message}`, 'error');
                     setTimeout(hideStatus, 3000);
-                }
-            })
-            .catch(error => {
-                console.error('保存数据时出错:', error);
-                showStatus(`Save failed: ${error.message}`, 'error');
-                setTimeout(hideStatus, 3000);
-            });
+                });
         }
 
         // 验证行数据
@@ -2671,15 +2946,15 @@
             if (!row.hasOwnProperty('qty') || !row.hasOwnProperty('net_price') || !row.hasOwnProperty('total_price')) {
                 return;
             }
-            
+
             const qty = parseFloat(row.qty) || 0;
             const netPrice = parseFloat(row.net_price) || 0;
             const totalPrice = parseFloat(row.total_price) || 0;
             const calculatedTotal = qty * netPrice;
-            
+
             // 检查计算值是否与总价匹配（考虑浮点数精度问题）
             const isInvalidRow = qty > 0 && netPrice > 0 && Math.abs(calculatedTotal - totalPrice) > 0.01;
-            
+
             const rowElement = document.querySelector(`tr[data-row-index="${rowIndex}"]`);
             if (rowElement) {
                 if (isInvalidRow) {
@@ -2691,12 +2966,12 @@
                 }
             }
         }
-        
+
         // 保存行数据
         function saveRow(rowIndex) {
             const row = tableData[rowIndex];
             const originalRow = originalData[rowIndex];
-            
+
             // 检查是否有更改
             let hasChanges = false;
             for (let key in row) {
@@ -2705,21 +2980,21 @@
                     break;
                 }
             }
-            
+
             if (!hasChanges) {
                 showStatus('No changes to save', 'info');
                 return;
             }
-            
+
             // 获取主键值（假设为pn字段）
             const pn = row.pn || row.PN;
             if (!pn) {
                 showStatus('Cannot save: missing primary key value(pn)', 'error');
                 return;
             }
-            
+
             showStatus('Saving data...', 'loading');
-            
+
             // 在请求体中加入主键值
             row.key = pn;
             authenticatedFetch(`/api/tables/${currentTable}`, {
@@ -2729,39 +3004,39 @@
                 },
                 body: JSON.stringify(row)
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showStatus('Data saved successfully', 'success');
-                    // 更新原始数据副本
-                    originalData[rowIndex] = JSON.parse(JSON.stringify(row));
-                } else {
-                    showStatus(`Save failed: ${data.message}`, 'error');
-                }
-            })
-            .catch(error => {
-                showStatus(`Save failed: ${error}`, 'error');
-            });
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showStatus('Data saved successfully', 'success');
+                        // 更新原始数据副本
+                        originalData[rowIndex] = JSON.parse(JSON.stringify(row));
+                    } else {
+                        showStatus(`Save failed: ${data.message}`, 'error');
+                    }
+                })
+                .catch(error => {
+                    showStatus(`Save failed: ${error}`, 'error');
+                });
         }
-        
+
         // 插入新记录
         function insertRecord() {
             try {
                 const formData = {};
                 const formFields = document.querySelectorAll('#insertFormFields input, #insertFormFields select');
-                
+
                 // 收集表单数据
                 formFields.forEach(field => {
                     let value = field.value;
-                    
+
                     // 处理特殊值
                     if (value === 'null' || value === 'None' || value === '') {
                         value = null;
                     }
-                    
+
                     formData[field.name] = value;
                 });
-                
+
                 // 发送插入请求
                 authenticatedFetch(`/api/tables/${currentTable}`, {
                     method: 'POST',
@@ -2770,95 +3045,95 @@
                     },
                     body: JSON.stringify(formData)
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showStatus('Record inserted successfully', 'success');
-                        hideInsertForm();
-                        loadTableData(); // 重新加载数据
-                    } else {
-                        showStatus(`Insert failed: ${data.message}`, 'error');
-                    }
-                })
-                .catch(error => {
-                    showStatus(`Insert failed: ${error}`, 'error');
-                });
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showStatus('Record inserted successfully', 'success');
+                            hideInsertForm();
+                            loadTableData(); // 重新加载数据
+                        } else {
+                            showStatus(`Insert failed: ${data.message}`, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showStatus(`Insert failed: ${error}`, 'error');
+                    });
             } catch (error) {
                 console.error("insertRecord函数执行出错:", error);
                 showStatus(`Error inserting record: ${error.message}`, 'error');
             }
         }
-        
 
-        
+
+
         // 显示插入表单
         function showInsertForm() {
             try {
                 console.log("showInsertForm函数被调用");
-                
+
                 const insertForm = document.getElementById('insertFormContainer');
-                
+
                 if (!insertForm) {
                     console.error("未找到id为'insertFormContainer'的元素");
                     return;
                 }
-                
+
                 // 如果表单已经展开，则隐藏（作为取消）
                 if (insertForm.style.display === 'block') {
                     hideInsertForm();
                     return;
                 }
-                
+
                 const insertFormFields = document.getElementById('insertFormFields');
-                
+
                 if (!insertFormFields) {
                     console.error("未找到id为'insertFormFields'的元素");
                     return;
                 }
-                
+
                 const columns = getColumnNames(currentTable);
                 console.log("当前表的列名:", columns);
-                
+
                 let formHtml = '';
                 columns.forEach(column => {
                     if (column === 'total_price') return;
                     formHtml += `<div class="col-md-3 mb-2"><input type="text" class="form-control form-control-sm" name="${column}" placeholder="${column}"></div>`;
                 });
-                
+
                 insertFormFields.innerHTML = formHtml;
-                
+
                 insertForm.style.display = 'block';
                 const tableContainers = document.querySelectorAll('.table-container');
                 if (tableContainers.length > 0) {
                     tableContainers[tableContainers.length - 1].style.display = 'none';
                 }
-                
+
                 console.log("插入表单已显示");
             } catch (error) {
                 console.error("showInsertForm函数执行出错:", error);
                 alert("显示插入表单时出错: " + error.message);
             }
         }
-        
+
         // 隐藏插入表单
         function hideInsertForm() {
             try {
                 console.log("hideInsertForm函数被调用");
-                
+
                 // 检查必要的DOM元素是否存在
                 const insertForm = document.getElementById('insertFormContainer');
                 const insertFormFields = document.getElementById('insertFormFields');
-                
+
                 if (!insertForm) {
                     console.error("未找到id为'insertFormContainer'的元素");
                     return;
                 }
-                
+
                 if (!insertFormFields) {
                     console.error("未找到id为'insertFormFields'的元素");
                     return;
                 }
-                
+
                 // 隐藏插入表单，显示数据表格
                 insertForm.style.display = 'none';
                 // 显示最后一个容器（数据表格）
@@ -2866,30 +3141,30 @@
                 if (tableContainers.length > 0) {
                     tableContainers[tableContainers.length - 1].style.display = 'block';
                 }
-                
+
                 // 清空表单字段
                 insertFormFields.innerHTML = '';
-                
+
                 console.log("插入表单已隐藏");
             } catch (error) {
                 console.error("hideInsertForm函数执行出错:", error);
                 console.log("隐藏插入表单时出错: " + error.message);
             }
         }
-        
 
-        
+
+
         // ============ 全局发货相关函数 ============
-        
+
         // 更新发货按钮区域显示
         function updateShipmentButtonArea() {
             const buttonArea = document.getElementById('shipmentButtonArea');
             const globalShipmentBtn = document.getElementById('globalShipmentBtn');
             const batchUpdateBtn = document.getElementById('batchUpdateBtn');
-            
+
             // 判断是否为open表
             const isOpenTable = (currentTable === 'wf_open' || currentTable === 'non_wf_open');
-            
+
             if (isOpenTable) {
                 // open表：显示发货按钮和批量修改按钮
                 buttonArea.style.display = 'flex';
@@ -2901,15 +3176,15 @@
                 globalShipmentBtn.style.display = 'none';
                 batchUpdateBtn.style.display = 'block';
             }
-            
+
             updateSelectedItemsDisplay();
         }
-        
+
         // 更新已选项目显示
         function updateSelectedItemsDisplay() {
             const displayArea = document.getElementById('selectedItemsDisplay');
             displayArea.innerHTML = '';
-            
+
             if (selectedItemsForShipment.size === 0) {
                 displayArea.innerHTML = '<span style="color: #a0aec0; font-size: 0.9rem;">No materials selected</span>';
             } else {
@@ -2922,24 +3197,24 @@
                 });
             }
         }
-        
+
         // 处理发货备选框变化
         function handleShipmentCheckboxChange() {
             const checkboxes = document.querySelectorAll('.shipment-checkbox');
-            
+
             checkboxes.forEach(checkbox => {
                 const poLine = checkbox.getAttribute('data-po-line');
                 const po = checkbox.getAttribute('data-po');
                 const pn = checkbox.getAttribute('data-pn');
                 const qty = parseFloat(checkbox.getAttribute('data-qty')) || 0;
                 const rowIndex = parseInt(checkbox.getAttribute('data-row-index'));
-                
+
                 if (checkbox.checked) {
                     // 如果checkbox被checked，添加到Map
                     if (!selectedItemsForShipment.has(poLine)) {
                         // 从整个数据中找到原始记录
                         const originalRow = tableData[rowIndex] || filteredData.find(r => r.po_line === poLine);
-                        
+
                         selectedItemsForShipment.set(poLine, {
                             po: po,
                             pn: pn,
@@ -2956,54 +3231,54 @@
                     selectedItemsForShipment.delete(poLine);
                 }
             });
-            
+
             updateSelectedItemsDisplay();
         }
-        
+
         // 从选择中移除一项
         function removeFromShipmentSelection(poLine) {
             selectedItemsForShipment.delete(poLine);
-            
+
             // 更新checkbox状态
             const checkbox = document.querySelector(`.shipment-checkbox[data-po-line="${poLine}"]`);
             if (checkbox) {
                 checkbox.checked = false;
             }
-            
+
             updateSelectedItemsDisplay();
         }
-        
+
         // 打开全局发货模态框
         function openGlobalShipmentModal() {
             if (selectedItemsForShipment.size === 0) {
                 showStatus('Please select materials to ship', 'warning');
                 return;
             }
-            
+
             // 清空模态框内容
             document.getElementById('globalTrackingNo').value = '';
             document.getElementById('globalShippingMode').value = '';
             document.getElementById('globalShippingCost').value = '';
-            
+
             // 生成物料发货项目
             renderShipmentItems();
-            
+
             // 显示模态框
             const modalElement = document.getElementById('globalShipmentModal');
             const modal = new bootstrap.Modal(modalElement);
             modal.show();
         }
-        
+
         // 渲染物料发货项目
         function renderShipmentItems() {
             const container = document.getElementById('shipmentItemsContainer');
             container.innerHTML = '';
-            
+
             selectedItemsForShipment.forEach((item, poLine) => {
                 const description = item.description || '未提供';
                 const description_preview = description.length > 100 ? description.substring(0, 100) + '...' : description;
                 const maxQty = item.qty || 0;
-                
+
                 const itemHtml = `
                     <div class="card mb-2" style="border: 1px solid #e2e8f0;">
                         <div class="card-body" style="padding: 12px;">
@@ -3034,71 +3309,71 @@
                 container.innerHTML += itemHtml;
             });
         }
-        
+
         // 确认全局发货
         function confirmGlobalShipment() {
             // 验证常规信息
             const trackingNo = document.getElementById('globalTrackingNo').value.trim();
             const shippingMode = document.getElementById('globalShippingMode').value.trim();
             const shippingCostStr = document.getElementById('globalShippingCost').value.trim();
-            
+
             if (!trackingNo) {
                 showStatus('Please enter tracking number', 'error');
                 return;
             }
-            
+
             if (!shippingMode) {
                 showStatus('Please select shipping method', 'error');
                 return;
             }
-            
+
             if (!shippingCostStr || parseFloat(shippingCostStr) < 0) {
                 showStatus('Please enter valid shipping cost', 'error');
                 return;
             }
-            
+
             // 验证发货数量
             const qtyInputs = document.querySelectorAll('.shipment-qty-input');
             const shipmentData = [];
             let isValid = true;
-            
+
             qtyInputs.forEach(input => {
                 const poLine = input.getAttribute('data-po-line');
                 const maxQty = parseFloat(input.getAttribute('data-max-qty'));
                 const shipmentQty = parseFloat(input.value) || 0;
-                
+
                 if (shipmentQty <= 0) {
                     showStatus(`PO/Line ${poLine}: Please enter valid shipment quantity`, 'error');
                     isValid = false;
                     return;
                 }
-                
+
                 if (shipmentQty > maxQty) {
                     showStatus(`PO/Line ${poLine}: Shipment quantity cannot exceed ${maxQty}`, 'error');
                     isValid = false;
                     return;
                 }
-                
+
                 shipmentData.push({
                     po_line: poLine,
                     shipment_qty: shipmentQty
                 });
             });
-            
+
             if (!isValid || shipmentData.length === 0) {
                 return;
             }
-            
+
             // 解析运费数值（去掉possible的"shared:"前缀用于显示，但实际发送给后端时分离）
             const shippingCostValue = parseFloat(shippingCostStr);
             const itemCount = selectedItemsForShipment.size;
-            
+
             // 为这一批发货的所有物料生成统一的batch_no，确保同一批发货的物料有相同的shipment_batch_no
             const shipmentBatchNo = `SHIP-${new Date().toISOString().split('T')[0].replace(/-/g, '')}-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
-            
+
             // 发送一个一个的发货请求
             showStatus('Processing shipment...', 'loading');
-            
+
             const shipmentRequests = shipmentData.map(data => {
                 const item = selectedItemsForShipment.get(data.po_line);
                 return authenticatedFetch('/api/shipment/process', {
@@ -3121,27 +3396,27 @@
                     })
                 });
             });
-            
+
             // 执行所有请求
             Promise.all(shipmentRequests)
                 .then(responses => Promise.all(responses.map(r => r.json())))
                 .then(results => {
                     // 检查是否有失败
                     const hasError = results.some(r => !r.success);
-                    
+
                     if (hasError) {
                         const errors = results.filter(r => !r.success).map(r => r.message).join('; ');
                         showStatus(`Shipment partially failed: ${errors}`, 'error');
                     } else {
                         showStatus('All materials have been shipped!', 'success');
-                        
+
                         // 关闭modal
                         const modalElement = document.getElementById('globalShipmentModal');
                         const modal = bootstrap.Modal.getInstance(modalElement);
                         if (modal) {
                             modal.hide();
                         }
-                        
+
                         // 重新加载表数据
                         setTimeout(() => loadTableData(), 800);
                     }
@@ -3150,9 +3425,9 @@
                     showStatus(`Shipment failed: ${error}`, 'error');
                 });
         }
-        
+
         // 设置发货确认按钮事件
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const confirmGlobalShipmentBtn = document.getElementById('confirmGlobalShipmentBtn');
             if (confirmGlobalShipmentBtn) {
                 confirmGlobalShipmentBtn.addEventListener('click', confirmGlobalShipment);
@@ -3165,15 +3440,15 @@
                 showStatus('Unable to get critical fields for record', 'error');
                 return;
             }
-            
+
             // 根据表类型确定要删除的字段名
             const isOpenTable = (tableName === 'wf_open' || tableName === 'non_wf_open');
             const fieldName = isOpenTable ? 'po_line' : 'id';
-            
+
             // 显示确认对话框
-            showConfirmModal(`Are you sure you want to delete this record? This action cannot be undone.`, function() {
+            showConfirmModal(`Are you sure you want to delete this record? This action cannot be undone.`, function () {
                 showStatus('Deleting record...', 'loading');
-                
+
                 // 使用 POST 请求，传递 key 和 key_field 在请求体中
                 authenticatedFetch(`/api/tables/${tableName}`, {
                     method: 'DELETE',
@@ -3185,40 +3460,40 @@
                         key_field: fieldName
                     })
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showStatus('Record deleted successfully', 'success');
-                        loadTableData(); // 重新加载数据
-                    } else {
-                        showStatus(`Delete failed: ${data.message}`, 'error');
-                    }
-                })
-                .catch(error => {
-                    showStatus(`Delete failed: ${error}`, 'error');
-                });
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showStatus('Record deleted successfully', 'success');
+                            loadTableData(); // 重新加载数据
+                        } else {
+                            showStatus(`Delete failed: ${data.message}`, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showStatus(`Delete failed: ${error}`, 'error');
+                    });
             });
         }
-        
+
         // 删除记录
         function deleteRecord() {
             const pn = document.getElementById('deletePN').value.trim();
-            
+
             if (!pn) {
                 showStatus('请输入要删除记录的PN号', 'error');
                 return;
             }
-            
+
             // 验证PN号格式（应该包含连字符）
             if (!pn.includes('-')) {
                 showStatus('请输入有效的PN号格式（如：8942-9106-1100）', 'error');
                 return;
             }
-            
+
             // 显示确认对话框
-            showConfirmModal(`Are you sure you want to delete the record with PN number ${pn}? This action cannot be undone.`, function() {
+            showConfirmModal(`Are you sure you want to delete the record with PN number ${pn}? This action cannot be undone.`, function () {
                 showStatus('Deleting record...', 'loading');
-                
+
                 authenticatedFetch(`/api/tables/${currentTable}`, {
                     method: 'DELETE',
                     headers: {
@@ -3229,30 +3504,30 @@
                         key_field: 'pn'
                     })
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showStatus('Record deleted successfully', 'success');
-                        document.getElementById('deletePN').value = '';
-                        loadTableData(); // 重新加载数据
-                    } else {
-                        showStatus(`Delete failed: ${data.message}`, 'error');
-                    }
-                })
-                .catch(error => {
-                    showStatus(`Delete failed: ${error}`, 'error');
-                });
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showStatus('Record deleted successfully', 'success');
+                            document.getElementById('deletePN').value = '';
+                            loadTableData(); // 重新加载数据
+                        } else {
+                            showStatus(`Delete failed: ${data.message}`, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showStatus(`Delete failed: ${error}`, 'error');
+                    });
             });
         }
-        
+
         // 打开退货Modal
         function openReturnShipmentModal(poLine, description, shipmentQty, closedTable, recordId) {
             try {
                 // 转换recordId为数字，以正确匹配数据库中id
                 const recordIdNum = parseInt(recordId);
-                
+
                 console.log('[DEBUG] openReturnShipmentModal called with recordId:', recordId, 'parsed:', recordIdNum);
-                
+
                 const currentRow = tableData.find(row => row.id === recordIdNum);
                 if (!currentRow) {
                     console.error('[ERROR] Unable to find record with id:', recordIdNum);
@@ -3260,7 +3535,7 @@
                     showStatus('Unable to get record information', 'error');
                     return;
                 }
-                
+
                 // 设置退货Modal的值
                 document.getElementById('returnPoLine').value = poLine;
                 document.getElementById('returnDescription').value = description;
@@ -3269,18 +3544,18 @@
                 document.getElementById('newBatchShippingCost').value = currentRow.shipping_cost || '';
                 document.getElementById('updateBatchShippingCost').checked = false;
                 document.getElementById('updateShippingCostContainer').style.display = 'none';
-                
+
                 // 为Modal不名改变量，供退货使用
                 document.getElementById('returnShipmentModal').dataset.closedTable = closedTable;
                 document.getElementById('returnShipmentModal').dataset.recordId = recordId;
                 document.getElementById('returnShipmentModal').dataset.shipmentBatchNo = currentRow.shipment_batch_no || '';
-                
+
                 console.log('[DEBUG] Set modal dataset:', {
                     closedTable: closedTable,
                     recordId: recordId,
                     shipmentBatchNo: currentRow.shipment_batch_no
                 });
-                
+
                 // 自动加载同一批发货号的其他物料
                 const shipmentBatchNo = currentRow.shipment_batch_no;
                 if (shipmentBatchNo) {
@@ -3297,7 +3572,7 @@
                 } else {
                     document.getElementById('batchShippingCostInfo').innerHTML = `Shipping Cost: $${currentRow.shipping_cost || 'N/A'}`;
                 }
-                
+
                 // 显示 Modal
                 const modalElement = document.getElementById('returnShipmentModal');
                 const modal = new bootstrap.Modal(modalElement);
@@ -3307,7 +3582,7 @@
                 showStatus('Error opening return modal: ' + error.message, 'error');
             }
         }
-        
+
         // 确认退货
         function confirmReturnShipment() {
             const returnQtyStr = document.getElementById('returnQty').value.trim();
@@ -3316,31 +3591,31 @@
             const recordId = document.getElementById('returnShipmentModal').dataset.recordId; // 会以一个字符串的形式return
             const shipmentBatchNo = document.getElementById('returnShipmentModal').dataset.shipmentBatchNo;
             const shouldUpdateBatchShippingCost = document.getElementById('updateBatchShippingCost').checked;
-            
+
             console.log('[DEBUG] confirmReturnShipment called with:', {
                 closedTable: closedTable,
                 recordId: recordId,
                 shipmentBatchNo: shipmentBatchNo,
                 shouldUpdateBatchShippingCost: shouldUpdateBatchShippingCost
             });
-            
+
             // 验证退货数量
             if (!returnQtyStr || returnQtyStr === '') {
                 showStatus('Please enter return quantity', 'error');
                 return;
             }
-            
+
             const returnQty = parseFloat(returnQtyStr);
             if (isNaN(returnQty) || returnQty <= 0) {
                 showStatus('Return quantity must be greater than 0', 'error');
                 return;
             }
-            
+
             if (returnQty > maxQty) {
                 showStatus(`Return quantity cannot exceed available quantity (${maxQty})`, 'error');
                 return;
             }
-            
+
             let newShippingCost = null;
             if (shouldUpdateBatchShippingCost) {
                 const newShippingCostStr = document.getElementById('newBatchShippingCost').value.trim();
@@ -3354,12 +3629,12 @@
                     return;
                 }
             }
-            
+
             // 发送退货请求
             showStatus('Processing return shipment...', 'loading');
-            
+
             const userEmail = localStorage.getItem('userEmail') || 'unknown@example.com';
-            
+
             const requestData = {
                 closed_table: closedTable,
                 record_id: recordId,
@@ -3367,9 +3642,9 @@
                 new_shipping_cost: newShippingCost,
                 shipment_batch_no: shipmentBatchNo
             };
-            
+
             console.log('[DEBUG] Sending return shipment request:', requestData);
-            
+
             authenticatedFetch('/api/shipment/return', {
                 method: 'POST',
                 headers: {
@@ -3378,67 +3653,67 @@
                 },
                 body: JSON.stringify(requestData)
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showStatus('Return shipment processed successfully!', 'success');
-                    
-                    // 关闭Modal
-                    const modalElement = document.getElementById('returnShipmentModal');
-                    const modal = bootstrap.Modal.getInstance(modalElement);
-                    if (modal) {
-                        modal.hide();
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showStatus('Return shipment processed successfully!', 'success');
+
+                        // 关闭Modal
+                        const modalElement = document.getElementById('returnShipmentModal');
+                        const modal = bootstrap.Modal.getInstance(modalElement);
+                        if (modal) {
+                            modal.hide();
+                        }
+
+                        // 重新加载表数据
+                        setTimeout(() => loadTableData(), 800);
+                    } else {
+                        showStatus(`Return failed: ${data.message}`, 'error');
                     }
-                    
-                    // 重新加载表数据
-                    setTimeout(() => loadTableData(), 800);
-                } else {
-                    showStatus(`Return failed: ${data.message}`, 'error');
-                }
-            })
-            .catch(error => {
-                showStatus(`Return failed: ${error}`, 'error');
-            });
+                })
+                .catch(error => {
+                    showStatus(`Return failed: ${error}`, 'error');
+                });
         }
-        
+
         // 退货模态框中更新运费Checkbox的事件监听
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const updateBatchShippingCostCheckbox = document.getElementById('updateBatchShippingCost');
             if (updateBatchShippingCostCheckbox) {
-                updateBatchShippingCostCheckbox.addEventListener('change', function() {
+                updateBatchShippingCostCheckbox.addEventListener('change', function () {
                     const container = document.getElementById('updateShippingCostContainer');
                     container.style.display = this.checked ? 'block' : 'none';
                 });
             }
-            
+
             const confirmReturnBtn = document.getElementById('confirmReturnBtn');
             if (confirmReturnBtn) {
                 confirmReturnBtn.addEventListener('click', confirmReturnShipment);
             }
         });
-        
+
         function updateRecordCount() {
             const countElement = document.getElementById('recordCount');
             const startIndex = (currentPage - 1) * itemsPerPage + 1;
             const endIndex = Math.min(currentPage * itemsPerPage, filteredData.length);
             countElement.textContent = `Showing records ${startIndex}-${endIndex}, Total: ${filteredData.length}`;
         }
-        
+
         // Render pagination
         function renderPagination() {
             const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-            
+
             // Hide pagination if only one page or no data
             if (totalPages <= 1) {
                 document.getElementById('paginationContainer').innerHTML = '';
                 return;
             }
-            
+
             let paginationHtml = `
                 <nav aria-label="Pagination Navigation">
                     <ul class="pagination justify-content-center">
             `;
-            
+
             // Previous page button
             if (currentPage > 1) {
                 paginationHtml += `
@@ -3453,11 +3728,11 @@
                     </li>
                 `;
             }
-            
+
             // Page number buttons
             let startPage = Math.max(1, currentPage - 2);
             let endPage = Math.min(totalPages, currentPage + 2);
-            
+
             // Ensure always showing 5 page buttons (if possible)
             if (endPage - startPage < 4) {
                 if (startPage === 1) {
@@ -3466,7 +3741,7 @@
                     startPage = Math.max(1, endPage - 4);
                 }
             }
-            
+
             for (let i = startPage; i <= endPage; i++) {
                 if (i === currentPage) {
                     paginationHtml += `
@@ -3482,7 +3757,7 @@
                     `;
                 }
             }
-            
+
             // Next page button
             if (currentPage < totalPages) {
                 paginationHtml += `
@@ -3497,15 +3772,15 @@
                     </li>
                 `;
             }
-            
+
             paginationHtml += `
                     </ul>
                 </nav>
             `;
-            
+
             document.getElementById('paginationContainer').innerHTML = paginationHtml;
         }
-        
+
         // 切换页面
         function changePage(pageNumber) {
             const totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -3516,7 +3791,7 @@
                 renderPagination();
             }
         }
-        
+
         // Update table title
         function updateTableTitle() {
             const titleMap = {
@@ -3525,11 +3800,11 @@
                 'non_wf_open': 'Non-WF Open',
                 'non_wf_closed': 'Non-WF Closed'
             };
-            
+
             const titleElement = document.getElementById('tableTitle');
             titleElement.textContent = `${titleMap[currentTable] || currentTable} Table Data`;
         }
-        
+
         // 显示状态消息
         function showStatus(message, type) {
             const statusElement = document.getElementById('statusMessage');
@@ -3537,47 +3812,47 @@
             statusElement.className = `status-message ${type}`;
             statusElement.style.display = 'block';
         }
-        
+
         // 隐藏状态消息
         function hideStatus() {
             const statusElement = document.getElementById('statusMessage');
             statusElement.style.display = 'none';
         }
-        
+
         // 批量修改相关变量
         let selectedRowsForBatchUpdate = new Set();
-        
+
         // 打开批量修改模态框
         function openBatchUpdateModal() {
             // 获取已选择的整行
             const selectedRows = Array.from(selectedItemsForShipment.values());
-            
+
             if (selectedRows.length === 0) {
                 showStatus('请先选择要修改的记录', 'warning');
                 return;
             }
-            
+
             selectedRowsForBatchUpdate = new Set(selectedRows.map(r => r.po_line));
             document.getElementById('batchUpdateCount').textContent = selectedRows.length;
-            
+
             // 根据表名提供幸字段
             const fieldsContainer = document.getElementById('batchUpdateFields');
             fieldsContainer.innerHTML = '';
-            
+
             let batchUpdateFields = [];
-            
+
             if (currentTable === 'wf_open' || currentTable === 'wf_closed') {
-                batchUpdateFields = ['eta_wfsz', 'record_no', 'wfsz_shipping_mode', 'shipping_cost', 'tracking_no'];
+                batchUpdateFields = ['eta_wfsz', 'record_no', 'wfsz_shipping_mode', 'shipping_cost', 'tracking_no', 'chinese_name', 'unit'];
             } else if (currentTable === 'non_wf_open' || currentTable === 'non_wf_closed') {
                 batchUpdateFields = ['eta_wfsz', 'record_no', 'shipping_mode', 'shipping_cost', 'tracking_no'];
             }
-            
+
             // 生成输入字段
             batchUpdateFields.forEach(field => {
                 const fieldLabel = getColumnDisplayName(field);
                 const colDiv = document.createElement('div');
                 colDiv.className = 'col-md-6';
-                
+
                 if (field === 'eta_wfsz') {
                     // 日历选择器
                     colDiv.innerHTML = `
@@ -3605,44 +3880,44 @@
                         <input type="${inputType}" class="form-control" id="batch_${field}" data-field="${field}" ${step}>
                     `;
                 }
-                
+
                 fieldsContainer.appendChild(colDiv);
             });
-            
+
             // 打开Modal
             const modal = new bootstrap.Modal(document.getElementById('batchUpdateModal'));
             modal.show();
         }
-        
+
         // 确认批量修改
-        document.getElementById('confirmBatchUpdateBtn')?.addEventListener('click', function() {
+        document.getElementById('confirmBatchUpdateBtn')?.addEventListener('click', function () {
             const updates = {};
             let hasChanges = false;
-            
+
             // 收集一个每一输入字段的值
             const inputFields = document.querySelectorAll('#batchUpdateFields [data-field]');
             inputFields.forEach(field => {
                 const fieldName = field.getAttribute('data-field');
                 const value = field.value;
-                
+
                 if (value !== '' && value !== null) {
                     updates[fieldName] = value;
                     hasChanges = true;
                 }
             });
-            
+
             if (!hasChanges) {
                 showStatus('请至少输入一个修改值', 'warning');
                 return;
             }
-            
+
             // 批量修改整行
             const selectedRows = Array.from(selectedItemsForShipment.values());
             const updatePromises = selectedRows.map(row => {
                 // 根据表类型采用不同的主键: closed表使用id，open表使用po_line
                 const isClosedTable = (currentTable === 'wf_closed' || currentTable === 'non_wf_closed');
                 const keyValue = isClosedTable ? row.id : row.po_line;
-                            
+
                 return authenticatedFetch(`/api/tables/${currentTable}`, {
                     method: 'PUT',
                     headers: {
@@ -3654,26 +3929,26 @@
                     })
                 }).then(response => response.json());
             });
-            
+
             showStatus('正在修改...', 'loading');
-            
+
             Promise.all(updatePromises)
                 .then(results => {
                     const hasError = results.some(r => !r.success);
-                    
+
                     if (hasError) {
                         const errors = results.filter(r => !r.success).map(r => r.message).join('; ');
                         showStatus(`部分修改失败: ${errors}`, 'error');
                     } else {
                         showStatus('全部记录事改成功！', 'success');
-                        
+
                         // 关闭Modal
                         const modalElement = document.getElementById('batchUpdateModal');
                         const modal = bootstrap.Modal.getInstance(modalElement);
                         if (modal) {
                             modal.hide();
                         }
-                        
+
                         // 重新加载表数据
                         setTimeout(() => loadTableData(), 800);
                     }
@@ -3682,149 +3957,149 @@
                     showStatus(`修改失败: ${error}`, 'error');
                 });
         });
-        
+
         // Report Sync 相关函数
         function openReportSyncModal() {
             const modal = new bootstrap.Modal(document.getElementById('reportSyncModal'));
             modal.show();
-            
+
             // 清理之前的结果
             document.getElementById('reportSyncResults').style.display = 'none';
             document.getElementById('reportSyncMessage').style.display = 'none';
             document.getElementById('reportSyncFile').value = '';
         }
-        
+
         function processReportSync() {
             const fileInput = document.getElementById('reportSyncFile');
             const file = fileInput.files[0];
-            
+
             if (!file) {
                 showReportSyncMessage('Please select an Excel file', 'warning');
                 return;
             }
-            
+
             if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
                 showReportSyncMessage('Only .xlsx and .xls files are supported', 'danger');
                 return;
             }
-            
+
             // 清理之前的结果
             document.getElementById('reportSyncResults').style.display = 'none';
-            
+
             // 显示加载状态
             showReportSyncMessage('Processing file...', 'info');
             document.getElementById('reportSyncProcessBtn').disabled = true;
-            
+
             // 创建 FormData
             const formData = new FormData();
             formData.append('file', file);
-            
+
             // 添加重试机制处理临时性连接失败
             const maxRetries = 3;
             let retryCount = 0;
-            
+
             function performRequest() {
                 return authenticatedFetch('/api/report_sync', {
                     method: 'POST',
                     body: formData
                 })
-                .then(response => {
-                    document.getElementById('reportSyncProcessBtn').disabled = false;
-                    
-                    // 检查响应状态
-                    if (!response || !response.ok) {
-                        throw new Error(`服务器返回错误: ${response?.status || '连接失败'}`);
-                    }
-                    
-                    // 检查是否成功
-                    const successHeader = response.headers.get('X-Report-Sync-Success');
-                    const updatedHeader = response.headers.get('X-Report-Sync-Updated');
-                    const errorsHeader = response.headers.get('X-Report-Sync-Errors');
-                    
-                    if (response.ok && successHeader === 'true') {
-                        // 获取文件流并自动下载
-                        return response.blob().then(blob => {
-                            // 创建临时 URL 并触发下载
-                            const url = window.URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = 'report_synced.xlsx';
-                            document.body.appendChild(a);
-                            a.click();
-                            window.URL.revokeObjectURL(url);
-                            document.body.removeChild(a);
-                            
-                            // 显示成功消息
-                            showReportSyncMessage(`成功更新 ${updatedHeader} 行数据，文件已自动下载`, 'success');
-                            
-                            // 解析错误信息
-                            let errors = null;
-                            if (errorsHeader) {
-                                try {
-                                    errors = JSON.parse(errorsHeader);
-                                } catch (e) {}
-                            }
-                            
-                            if (updatedHeader > 0) {
-                                displayReportSyncResults(updatedHeader, updatedHeader, errors);
-                            }
-                            
-                            // 一段时间后自动关闭模态框
-                            setTimeout(() => {
-                                const modalElement = document.getElementById('reportSyncModal');
-                                const modal = bootstrap.Modal.getInstance(modalElement);
-                                if (modal) {
-                                    modal.hide();
+                    .then(response => {
+                        document.getElementById('reportSyncProcessBtn').disabled = false;
+
+                        // 检查响应状态
+                        if (!response || !response.ok) {
+                            throw new Error(`服务器返回错误: ${response?.status || '连接失败'}`);
+                        }
+
+                        // 检查是否成功
+                        const successHeader = response.headers.get('X-Report-Sync-Success');
+                        const updatedHeader = response.headers.get('X-Report-Sync-Updated');
+                        const errorsHeader = response.headers.get('X-Report-Sync-Errors');
+
+                        if (response.ok && successHeader === 'true') {
+                            // 获取文件流并自动下载
+                            return response.blob().then(blob => {
+                                // 创建临时 URL 并触发下载
+                                const url = window.URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = 'report_synced.xlsx';
+                                document.body.appendChild(a);
+                                a.click();
+                                window.URL.revokeObjectURL(url);
+                                document.body.removeChild(a);
+
+                                // 显示成功消息
+                                showReportSyncMessage(`成功更新 ${updatedHeader} 行数据，文件已自动下载`, 'success');
+
+                                // 解析错误信息
+                                let errors = null;
+                                if (errorsHeader) {
+                                    try {
+                                        errors = JSON.parse(errorsHeader);
+                                    } catch (e) { }
                                 }
-                            }, 2000);
-                        });
-                    } else {
-                        // 处理错误响应
-                        return response.text().then(text => {
-                            try {
-                                const data = JSON.parse(text);
-                                showReportSyncMessage(`处理失败: ${data.error}`, 'danger');
-                            } catch (e) {
-                                showReportSyncMessage(`处理失败: 服务器错误`, 'danger');
-                            }
-                        });
-                    }
-                })
-                .catch(error => {
-                    document.getElementById('reportSyncProcessBtn').disabled = false;
-                    
-                    // 如果是网络错误且未超过重试次数，则重试
-                    if ((error.message.includes('连接') || error.message.includes('ERR_EMPTY_RESPONSE')) && retryCount < maxRetries) {
-                        retryCount++;
-                        showReportSyncMessage(`连接失败，正在重试 (${retryCount}/${maxRetries})...`, 'warning');
-                        return new Promise(resolve => {
-                            setTimeout(() => resolve(performRequest()), 2000);
-                        });
-                    }
-                    
-                    showReportSyncMessage(`处理失败: ${error.message}`, 'danger');
-                    throw error;
-                });
+
+                                if (updatedHeader > 0) {
+                                    displayReportSyncResults(updatedHeader, updatedHeader, errors);
+                                }
+
+                                // 一段时间后自动关闭模态框
+                                setTimeout(() => {
+                                    const modalElement = document.getElementById('reportSyncModal');
+                                    const modal = bootstrap.Modal.getInstance(modalElement);
+                                    if (modal) {
+                                        modal.hide();
+                                    }
+                                }, 2000);
+                            });
+                        } else {
+                            // 处理错误响应
+                            return response.text().then(text => {
+                                try {
+                                    const data = JSON.parse(text);
+                                    showReportSyncMessage(`处理失败: ${data.error}`, 'danger');
+                                } catch (e) {
+                                    showReportSyncMessage(`处理失败: 服务器错误`, 'danger');
+                                }
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        document.getElementById('reportSyncProcessBtn').disabled = false;
+
+                        // 如果是网络错误且未超过重试次数，则重试
+                        if ((error.message.includes('连接') || error.message.includes('ERR_EMPTY_RESPONSE')) && retryCount < maxRetries) {
+                            retryCount++;
+                            showReportSyncMessage(`连接失败，正在重试 (${retryCount}/${maxRetries})...`, 'warning');
+                            return new Promise(resolve => {
+                                setTimeout(() => resolve(performRequest()), 2000);
+                            });
+                        }
+
+                        showReportSyncMessage(`处理失败: ${error.message}`, 'danger');
+                        throw error;
+                    });
             }
-            
+
             performRequest();
         }
-        
+
         function showReportSyncMessage(message, type) {
             const messageEl = document.getElementById('reportSyncMessage');
             messageEl.textContent = message;
             messageEl.className = `alert alert-${type}`;
             messageEl.style.display = 'block';
         }
-        
+
         function displayReportSyncResults(successCount, totalCount, errors) {
             const resultsDiv = document.getElementById('reportSyncResults');
             const resultsList = document.getElementById('reportSyncResultsList');
-            
+
             let html = `<div class="alert alert-success">`;
             html += `<strong>成功更新：</strong> ${successCount}/${totalCount} 行`;
             html += `</div>`;
-            
+
             if (errors && errors.length > 0) {
                 html += `<div class="alert alert-warning"><strong>警告：</strong><ul>`;
                 errors.forEach(err => {
@@ -3832,11 +4107,253 @@
                 });
                 html += `</ul></div>`;
             }
-            
+
+            resultsList.innerHTML = html;
+            resultsDiv.style.display = 'block';
+        }
+
+        // Excel Sync 相关函数
+        function detectOrderSheets() {
+            const fileInput = document.getElementById('excelSyncOrderReportFile');
+            const file = fileInput.files[0];
+            const infoDiv = document.getElementById('orderReportSheetsInfo');
+
+            if (!file) {
+                infoDiv.innerHTML = '';
+                return;
+            }
+
+            infoDiv.innerHTML = '<span class="text-muted">Detecting sheets...</span>';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            authenticatedFetch('/api/detect_excel_sheets', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.sheets) {
+                        const sheetList = data.sheets.join(', ');
+                        infoDiv.innerHTML = `<span class="text-info">Available sheets: <strong>${sheetList}</strong></span>`;
+                        // 自动填充首个sheetname
+                        document.getElementById('excelSyncOrderSheet').value = data.sheets[0] || 'order report';
+                    } else {
+                        infoDiv.innerHTML = `<span class="text-danger">Failed to detect sheets</span>`;
+                    }
+                })
+                .catch(error => {
+                    infoDiv.innerHTML = `<span class="text-danger">Error: ${error.message}</span>`;
+                });
+        }
+
+        function detectSourceSheets() {
+            const fileInput = document.getElementById('excelSyncSourceFile');
+            const file = fileInput.files[0];
+            const infoDiv = document.getElementById('sourceReportSheetsInfo');
+
+            if (!file) {
+                infoDiv.innerHTML = '';
+                return;
+            }
+
+            infoDiv.innerHTML = '<span class="text-muted">Detecting sheets...</span>';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            authenticatedFetch('/api/detect_excel_sheets', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.sheets) {
+                        const sheetList = data.sheets.join(', ');
+                        infoDiv.innerHTML = `<span class="text-info">Available sheets: <strong>${sheetList}</strong></span>`;
+                        // 自动填充首个sheetname
+                        if (data.sheets.includes('WF Closed')) {
+                            document.getElementById('excelSyncSourceSheet').value = 'WF Closed';
+                        } else if (data.sheets.includes('Non-WF Closed')) {
+                            document.getElementById('excelSyncSourceSheet').value = 'Non-WF Closed';
+                        } else {
+                            document.getElementById('excelSyncSourceSheet').value = data.sheets[0] || 'WF Closed';
+                        }
+                    } else {
+                        infoDiv.innerHTML = `<span class="text-danger">Failed to detect sheets</span>`;
+                    }
+                })
+                .catch(error => {
+                    infoDiv.innerHTML = `<span class="text-danger">Error: ${error.message}</span>`;
+                });
+        }
+
+        // Excel Sync 函数
+        function openExcelSyncModal() {
+            const modal = new bootstrap.Modal(document.getElementById('excelSyncModal'));
+            modal.show();
+
+            // 清理之前的结果
+            document.getElementById('excelSyncResults').style.display = 'none';
+            document.getElementById('excelSyncMessage').style.display = 'none';
+            document.getElementById('excelSyncOrderReportFile').value = '';
+            document.getElementById('excelSyncSourceFile').value = '';
+        }
+
+        function processExcelSync() {
+            const orderReportFile = document.getElementById('excelSyncOrderReportFile').files[0];
+            const sourceFile = document.getElementById('excelSyncSourceFile').files[0];
+            const orderSheet = document.getElementById('excelSyncOrderSheet').value || 'order report';
+            const sourceSheet = document.getElementById('excelSyncSourceSheet').value;
+
+            if (!orderReportFile) {
+                showExcelSyncMessage('Please select Order Report Excel file', 'warning');
+                return;
+            }
+
+            if (!sourceFile) {
+                showExcelSyncMessage('Please select Source Data Excel file', 'warning');
+                return;
+            }
+
+            if (!orderReportFile.name.endsWith('.xlsx') && !orderReportFile.name.endsWith('.xls')) {
+                showExcelSyncMessage('Only .xlsx and .xls files are supported for Order Report', 'danger');
+                return;
+            }
+
+            if (!sourceFile.name.endsWith('.xlsx') && !sourceFile.name.endsWith('.xls')) {
+                showExcelSyncMessage('Only .xlsx and .xls files are supported for Source Data', 'danger');
+                return;
+            }
+
+            // 清理之前的结果
+            document.getElementById('excelSyncResults').style.display = 'none';
+
+            // 显示加载状态
+            showExcelSyncMessage('Processing files...', 'info');
+            document.getElementById('excelSyncProcessBtn').disabled = true;
+
+            // 创建 FormData
+            const formData = new FormData();
+            formData.append('order_report_file', orderReportFile);
+            formData.append('source_file', sourceFile);
+            formData.append('order_sheet', orderSheet);
+            formData.append('source_sheet', sourceSheet);
+
+            // 添加重试机制
+            const maxRetries = 3;
+            let retryCount = 0;
+
+            function performRequest() {
+                return authenticatedFetch('/api/excel_sync', {
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(response => {
+                        document.getElementById('excelSyncProcessBtn').disabled = false;
+
+                        // 检查是否成功
+                        const successHeader = response.headers.get('X-Excel-Sync-Success');
+                        const updatedHeader = response.headers.get('X-Excel-Sync-Updated');
+                        const errorsHeader = response.headers.get('X-Excel-Sync-Errors');
+
+                        if (response.ok && successHeader === 'true') {
+                            // 获取文件流并自动下载
+                            return response.blob().then(blob => {
+                                // 创建临时 URL 并触发下载
+                                const url = window.URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = 'excel_synced.xlsx';
+                                document.body.appendChild(a);
+                                a.click();
+                                window.URL.revokeObjectURL(url);
+                                document.body.removeChild(a);
+
+                                // 显示成功消息
+                                showExcelSyncMessage(`成功更新 ${updatedHeader} 行数据，文件已自动下载`, 'success');
+
+                                // 解析错误信息
+                                let errors = null;
+                                if (errorsHeader) {
+                                    try {
+                                        errors = JSON.parse(errorsHeader);
+                                    } catch (e) { }
+                                }
+
+                                if (updatedHeader > 0) {
+                                    displayExcelSyncResults(updatedHeader, updatedHeader, errors);
+                                }
+
+                                // 一段时间后自动关闭模态框
+                                setTimeout(() => {
+                                    const modalElement = document.getElementById('excelSyncModal');
+                                    const modal = bootstrap.Modal.getInstance(modalElement);
+                                    if (modal) {
+                                        modal.hide();
+                                    }
+                                }, 2000);
+                            });
+                        } else {
+                            // 处理错误响应
+                            return response.text().then(text => {
+                                try {
+                                    const data = JSON.parse(text);
+                                    showExcelSyncMessage(`处理失败: ${data.error}`, 'danger');
+                                } catch (e) {
+                                    showExcelSyncMessage(`处理失败: 服务器错误`, 'danger');
+                                }
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        document.getElementById('excelSyncProcessBtn').disabled = false;
+
+                        // 如果是网络错误且未超过重试次数，则重试
+                        if ((error.message.includes('连接') || error.message.includes('ERR_EMPTY_RESPONSE')) && retryCount < maxRetries) {
+                            retryCount++;
+                            showExcelSyncMessage(`连接失败，正在重试 (${retryCount}/${maxRetries})...`, 'warning');
+                            return new Promise(resolve => {
+                                setTimeout(() => resolve(performRequest()), 2000);
+                            });
+                        }
+
+                        showExcelSyncMessage(`处理失败: ${error.message}`, 'danger');
+                        throw error;
+                    });
+            }
+
+            performRequest();
+        }
+
+        function showExcelSyncMessage(message, type) {
+            const messageEl = document.getElementById('excelSyncMessage');
+            messageEl.textContent = message;
+            messageEl.className = `alert alert-${type}`;
+            messageEl.style.display = 'block';
+        }
+
+        function displayExcelSyncResults(successCount, totalCount, errors) {
+            const resultsDiv = document.getElementById('excelSyncResults');
+            const resultsList = document.getElementById('excelSyncResultsList');
+
+            let html = `<div class="alert alert-success">`;
+            html += `<strong>成功更新：</strong> ${successCount}/${totalCount} 行`;
+            html += `</div>`;
+
+            if (errors && errors.length > 0) {
+                html += `<div class="alert alert-warning"><strong>警告：</strong><ul>`;
+                errors.forEach(err => {
+                    html += `<li>${err}</li>`;
+                });
+                html += `</ul></div>`;
+            }
+
             resultsList.innerHTML = html;
             resultsDiv.style.display = 'block';
         }
     </script>
 </body>
-</html>
 
+</html>

@@ -4,6 +4,9 @@
 
 ## 快速开始
 
+docker build -t proto-sap .
+docker save proto-sap -o proto-sap.tar
+
 ### Docker部署（推荐）
 
 ```bash
