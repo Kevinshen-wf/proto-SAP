@@ -545,8 +545,8 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <p>The following data's primary keys already exist in the database. Do you want to overwrite the
-                        existing data?</p>
+                    <p>The following data's primary keys already exist in the database. Please choose how to handle
+                        them.</p>
                     <div id="duplicateDataList" class="table-responsive">
                         <!-- Duplicate data list will be dynamically generated via JavaScript -->
                     </div>
@@ -554,7 +554,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
                         onclick="skipDuplicateFile()">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="confirmOverwriteBtn">Confirm Overwrite</button>
+                    <button type="button" class="btn btn-primary" id="confirmOverwriteBtn">Overwrite Selected</button>
                 </div>
             </div>
         </div>
@@ -610,7 +610,7 @@
             setupFileUpload();
 
             // Set confirm overwrite button event
-            document.getElementById('confirmOverwriteBtn').addEventListener('click', confirmOverwrite);
+            document.getElementById('confirmOverwriteBtn').addEventListener('click', confirmOverwriteSelected);
 
             // Add logout button event listener
             document.getElementById('logoutBtn').addEventListener('click', function () {
@@ -863,17 +863,25 @@
                 allData: allData,
                 tableName: tableName,
                 fileIndex: fileIndex,
-                company: company
+                company: company,
+                duplicates: duplicates
             };
 
-            // Generate duplicate data list
+            // Generate duplicate data list with selection controls
             const duplicateList = document.getElementById('duplicateDataList');
-            let html = '<table class="table table-striped table-bordered">';
-            html += '<thead><tr><th>Primary Key</th><th>Description</th><th>Quantity</th><th>Unit Price</th><th>Total Price</th></tr></thead><tbody>';
+            let html = '<div class="d-flex justify-content-between align-items-center mb-2">';
+            html += '<div class="fw-semibold">Select the records to overwrite</div>';
+            html += '<div class="d-flex gap-2">';
+            html += '<button class="btn btn-sm btn-outline-primary" type="button" onclick="toggleAllDuplicates(true)">Select All</button>';
+            html += '<button class="btn btn-sm btn-outline-secondary" type="button" onclick="toggleAllDuplicates(false)">Deselect All</button>';
+            html += '</div></div>';
+            html += '<table class="table table-striped table-bordered">';
+            html += '<thead><tr><th style="width: 60px;">Select</th><th>Primary Key</th><th>Description</th><th>Quantity</th><th>Unit Price</th><th>Total Price</th></tr></thead><tbody>';
 
             duplicates.forEach(dup => {
                 const data = dup.data;
                 html += '<tr>';
+                html += `<td class="text-center"><input type="checkbox" class="form-check-input duplicate-checkbox" data-primary-key="${dup.primary_key}" checked></td>`;
                 html += `<td>${dup.primary_key}</td>`;
                 html += `<td>${data.description || ''}</td>`;
                 html += `<td>${data.qty || ''}</td>`;
@@ -890,16 +898,53 @@
             modal.show();
         }
 
-        // Confirm overwrite of duplicate data
-        function confirmOverwrite() {
-            // Close modal
-            bootstrap.Modal.getInstance(document.getElementById('duplicateConfirmModal')).hide();
-
-            // Insert data
-            if (pendingImportData) {
-                insertData(pendingImportData.allData, pendingImportData.tableName, pendingImportData.fileIndex, pendingImportData.company);
-                pendingImportData = null;
+        // Confirm overwrite only for selected duplicate rows
+        function confirmOverwriteSelected() {
+            if (!pendingImportData) {
+                return;
             }
+
+            const checkboxes = Array.from(document.querySelectorAll('.duplicate-checkbox'));
+            const selectedKeys = checkboxes
+                .filter(box => box.checked)
+                .map(box => box.getAttribute('data-primary-key'));
+
+            if (selectedKeys.length === 0) {
+                showStatus('Please select at least one record to overwrite, or click Cancel to skip this file.', 'error');
+                return;
+            }
+
+            const primaryKeyField = getPrimaryKeyField(pendingImportData.tableName);
+            const selectedData = pendingImportData.allData.filter(item => {
+                const key = item[primaryKeyField];
+                // Keep non-duplicate rows and only the selected duplicate rows
+                if (!pendingImportData.duplicates.some(dup => dup.primary_key === key)) {
+                    return true;
+                }
+                return selectedKeys.includes(String(key));
+            });
+
+            bootstrap.Modal.getInstance(document.getElementById('duplicateConfirmModal')).hide();
+            insertData(selectedData, pendingImportData.tableName, pendingImportData.fileIndex, pendingImportData.company);
+            pendingImportData = null;
+        }
+
+        // Toggle select all/none in duplicate list
+        function toggleAllDuplicates(selectAll) {
+            document.querySelectorAll('.duplicate-checkbox').forEach(box => {
+                box.checked = selectAll;
+            });
+        }
+
+        // Determine primary key field name for a given table
+        function getPrimaryKeyField(tableName) {
+            if (tableName === 'wf_open' || tableName === 'non_wf_open') {
+                return 'po_line';
+            }
+            if (tableName === 'wf_closed' || tableName === 'non_wf_closed') {
+                return 'pn';
+            }
+            return 'id';
         }
 
         // Skip current duplicate file and continue with next

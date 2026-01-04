@@ -767,15 +767,26 @@
             width: 50px;
         }
 
+        /* 选择列样式 */
+        .select-cell {
+            text-align: center;
+            width: 40px !important;
+            min-width: 40px !important;
+            max-width: 40px !important;
+            padding: 4px !important;
+        }
+
         /* 操作列样式 */
         .action-cell {
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 4px;
             white-space: nowrap;
-            width: 130px !important;
-            min-width: 130px !important;
-            max-width: 130px !important;
+            width: 70px !important;
+            min-width: 70px !important;
+            max-width: 70px !important;
+            padding: 4px !important;
         }
 
         .shipment-checkbox {
@@ -833,9 +844,11 @@
         }
 
         /* Allow Actions column to be narrower than global min-width */
-        .table th:first-child,
+        .table th.select-header,
+        .table td.select-cell,
+        .table th.action-header,
         .table td.action-cell {
-            min-width: 40px !important;
+            min-width: 30px !important;
         }
 
         /* 全局发货按钮区域 */
@@ -939,6 +952,18 @@
             </div>
         </div>
 
+        <div class="mb-2 d-flex align-items-center gap-2 flex-wrap">
+            <button class="btn btn-sm btn-outline-primary" onclick="toggleSelectPage()">
+                ☑️ Select/Deselect Page
+            </button>
+            <button class="btn btn-sm btn-outline-primary" onclick="toggleSelectAllFiltered()">
+                🌐 Select/Deselect All Matching
+            </button>
+            <div class="ms-auto p-2 border rounded bg-light" id="selectionSummary">
+                <strong>Selected Subtotal:</strong> <span id="selectedSubtotal">0.00</span>
+            </div>
+        </div>
+
         <!-- 插入表单 (默认隐藏) -->
         <div id="insertFormContainer" class="table-container" style="display: none;">
             <h5>Insert New Record</h5>
@@ -963,6 +988,9 @@
                     <tbody id="tableBody">
                         <!-- 表体将通过JavaScript动态生成 -->
                     </tbody>
+                    <tfoot id="tableFooter" class="table-light">
+                        <!-- 表尾将通过JavaScript动态生成 -->
+                    </tfoot>
                 </table>
             </div>
             <div id="recordCount" class="mt-2 text-muted"></div>
@@ -1170,71 +1198,73 @@
         </div>
     </div>
 
-    <script src="/js/bootstrap.bundle.min.js"></script>
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">📚 Excel Sync - Data Synchronization</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-info">
-                    <strong>How to use:</strong>
-                    <ol>
-                        <li>Upload an Excel file containing Order Report sheet</li>
-                        <li>Upload another Excel file containing WF Closed/Non-WF Closed sheet</li>
-                        <li>The system will find matching records and fill Comments (Tracking No) and Reply (ETA + 7
-                            days)</li>
-                    </ol>
+    <!-- Excel Sync 模态框 -->
+    <div class="modal fade" id="excelSyncModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">📚 Excel Sync - Data Synchronization</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <strong>How to use:</strong>
+                        <ol>
+                            <li>Upload an Excel file containing Order Report sheet</li>
+                            <li>Upload another Excel file containing WF Closed/Non-WF Closed sheet</li>
+                            <li>The system will find matching records and fill Comments (Tracking No) and Reply (ETA + 7
+                                days)</li>
+                        </ol>
+                    </div>
 
-                <div id="excelSyncUploadArea" class="card">
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label for="excelSyncOrderReportFile" class="form-label">Select Order Report Excel File
-                                (.xlsx)</label>
-                            <input type="file" class="form-control" id="excelSyncOrderReportFile" accept=".xlsx,.xls"
-                                onchange="detectOrderSheets()">
-                            <div id="orderReportSheetsInfo" style="margin-top: 8px; font-size: 0.9em;"></div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="excelSyncSourceFile" class="form-label">Select Source Data Excel File
-                                (.xlsx)</label>
-                            <input type="file" class="form-control" id="excelSyncSourceFile" accept=".xlsx,.xls"
-                                onchange="detectSourceSheets()">
-                            <div id="sourceReportSheetsInfo" style="margin-top: 8px; font-size: 0.9em;"></div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="excelSyncOrderSheet" class="form-label">Order Report Sheet Name</label>
-                                <input type="text" class="form-control" id="excelSyncOrderSheet" value="Order Report"
-                                    placeholder="Default: Order Report">
+                    <div id="excelSyncUploadArea" class="card">
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="excelSyncOrderReportFile" class="form-label">Select Order Report Excel File
+                                    (.xlsx)</label>
+                                <input type="file" class="form-control" id="excelSyncOrderReportFile"
+                                    accept=".xlsx,.xls" onchange="detectOrderSheets()">
+                                <div id="orderReportSheetsInfo" style="margin-top: 8px; font-size: 0.9em;"></div>
                             </div>
-                            <div class="col-md-6">
-                                <label for="excelSyncSourceSheet" class="form-label">Source Sheet Name (WF Closed/Non-WF
-                                    Closed)</label>
-                                <select class="form-select" id="excelSyncSourceSheet">
-                                    <option value="WF Closed">WF Closed</option>
-                                    <option value="Non-WF Closed">Non-WF Closed</option>
-                                </select>
+                            <div class="mb-3">
+                                <label for="excelSyncSourceFile" class="form-label">Select Source Data Excel File
+                                    (.xlsx)</label>
+                                <input type="file" class="form-control" id="excelSyncSourceFile" accept=".xlsx,.xls"
+                                    onchange="detectSourceSheets()">
+                                <div id="sourceReportSheetsInfo" style="margin-top: 8px; font-size: 0.9em;"></div>
                             </div>
-                        </div>
-                        <div id="excelSyncMessage" style="display: none;" class="alert"></div>
-                        <div id="excelSyncResults" style="display: none;" class="mt-3">
-                            <h6>Sync Results:</h6>
-                            <div id="excelSyncResultsList"></div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="excelSyncOrderSheet" class="form-label">Order Report Sheet Name</label>
+                                    <input type="text" class="form-control" id="excelSyncOrderSheet"
+                                        value="Order Report" placeholder="Default: Order Report">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="excelSyncSourceSheet" class="form-label">Source Sheet Name (WF
+                                        Closed/Non-WF
+                                        Closed)</label>
+                                    <select class="form-select" id="excelSyncSourceSheet">
+                                        <option value="WF Closed">WF Closed</option>
+                                        <option value="Non-WF Closed">Non-WF Closed</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="excelSyncMessage" style="display: none;" class="alert"></div>
+                            <div id="excelSyncResults" style="display: none;" class="mt-3">
+                                <h6>Sync Results:</h6>
+                                <div id="excelSyncResultsList"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="excelSyncProcessBtn" onclick="processExcelSync()">
-                    📋 Process & Sync
-                </button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="excelSyncProcessBtn" onclick="processExcelSync()">
+                        📋 Process & Sync
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
     </div>
 
     <script src="/js/bootstrap.bundle.min.js"></script>
@@ -1541,7 +1571,7 @@
             const table = document.querySelector('.table');
             if (!table) return;
 
-            const rows = table.querySelectorAll('tbody tr');
+            const rows = table.querySelectorAll('tbody tr, tfoot tr');
             if (rows.length === 0) return;
 
             const headerCells = table.querySelectorAll('thead th');
@@ -1584,11 +1614,21 @@
             headerCells.forEach((th, colIndex) => {
                 const columnName = th.textContent.trim();
 
-                // Actions列单单独处理
-                if (columnName === 'Actions') {
+                // Select列单独处理
+                if (th.classList.contains('select-header') || columnName === 'Sel') {
+                    const selectWidth = 40;
+                    th.style.width = selectWidth + 'px';
+                    th.style.minWidth = selectWidth + 'px';
+                    th.style.maxWidth = selectWidth + 'px';
+                    th.style.fontSize = '0.9rem';
+                    return;
+                }
+
+                // Actions列单独处理
+                if (th.classList.contains('action-header') || columnName === 'Actions') {
                     // 根据表类型动态设置宽度: open表不需要退货按钮, 所以宽度较小; closed表有退货按钮, 需要更大的宽度
                     const isOpen = (currentTable === 'wf_open' || currentTable === 'non_wf_open');
-                    const actionWidth = isOpen ? 50 : 140;
+                    const actionWidth = isOpen ? 40 : 70;
                     th.style.width = actionWidth + 'px';
                     th.style.minWidth = actionWidth + 'px';
                     th.style.maxWidth = actionWidth + 'px';
@@ -1634,11 +1674,20 @@
             rows.forEach(row => {
                 const cells = row.querySelectorAll('td');
                 cells.forEach((cell, colIndex) => {
-                    // Actions列（第一列）
-                    if (colIndex === 0) {
+                    // Select列 (Targeting by class)
+                    if (cell.classList.contains('select-cell')) {
+                        const selectWidth = 40;
+                        cell.style.width = selectWidth + 'px';
+                        cell.style.minWidth = selectWidth + 'px';
+                        cell.style.maxWidth = selectWidth + 'px';
+                        return;
+                    }
+
+                    // Actions列 (Targeting by class)
+                    if (cell.classList.contains('action-cell')) {
                         // 根据表类型设置宽度: open表较小, closed表较大
                         const isOpen = (currentTable === 'wf_open' || currentTable === 'non_wf_open');
-                        const actionWidth = isOpen ? 65 : 140;
+                        const actionWidth = isOpen ? 40 : 70;
                         cell.style.width = actionWidth + 'px';
                         cell.style.minWidth = actionWidth + 'px';
                         cell.style.maxWidth = actionWidth + 'px';
@@ -1687,6 +1736,14 @@
                 // 使用实际的行索引而不是分页后的索引
                 const rowIndex = startIndex + index;
 
+                const pn = row['pn'] || '';
+                const po = row['po'] || '';
+                const poLine = row['po_line'] || '';
+                const id = row['id'] || '';
+                const rowQty = parseFloat(row.qty) || 0;
+                const isOpenTable = (currentTable === 'wf_open' || currentTable === 'non_wf_open');
+                const isClosedTable = (currentTable === 'wf_closed' || currentTable === 'non_wf_closed');
+
                 // 检查 qty*net_price 是否等于 total_price
                 const qty = parseFloat(row.qty) || 0;
                 const netPrice = parseFloat(row.net_price) || 0;
@@ -1704,45 +1761,13 @@
 
                 let rowHtml = `<tr data-row-index="${rowIndex}" class="${rowClass}">`;
 
-                // 先添加操作列
-                const pn = row['pn'] || '';
-                const po = row['po'] || '';
-                const poLine = row['po_line'] || '';
-                const id = row['id'] || '';
-                const rowQty = parseFloat(row.qty) || 0;
-                const isOpenTable = (currentTable === 'wf_open' || currentTable === 'non_wf_open');
-
-                rowHtml += `<td style="text-align: center;" class="action-cell">`;
-
-                // 复选框 (所有表格都显示)
+                // 1. 先添加选择列 (Far left)
                 const isChecked = selectedItemsForShipment.has(poLine) ? 'checked' : '';
-                rowHtml += `<input type="checkbox" class="shipment-checkbox" data-po-line="${poLine}" data-po="${po}" data-pn="${pn}" data-qty="${rowQty}" data-row-index="${rowIndex}" ${isChecked} onchange="handleShipmentCheckboxChange()" />`;
+                rowHtml += `<td style="text-align: center;" class="select-cell">
+                    <input type="checkbox" class="shipment-checkbox" data-po-line="${poLine}" data-po="${po}" data-pn="${pn}" data-qty="${rowQty}" data-row-index="${rowIndex}" ${isChecked} onchange="handleShipmentCheckboxChange()" />
+                </td>`;
 
-                // 删除按钮 - 根据表类型传递不同的主键
-                const deleteKey = isOpenTable ? poLine : id;
-                const deleteKeyDisplay = isOpenTable ? poLine : id;
-                rowHtml += `<button class="delete-btn" onclick="deleteRowRecord('${deleteKey}', '${currentTable}')" title="删除此记录">✕</button>`;
-
-                // 退货按钮 (仅在closed表显示)
-                const isClosedTable = (currentTable === 'wf_closed' || currentTable === 'non_wf_closed');
-                if (isClosedTable) {
-                    const shipmentQty = parseFloat(row.qty) || 0;
-                    const poLineStr = String(poLine).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
-                    // 更完善的转义：处理换行符、引号等特殊字符
-                    const descriptionStr = String(row.description || '')
-                        .replace(/\\/g, '\\\\\\\\')
-                        .replace(/"/g, '\\"')
-                        .replace(/'/g, "\\'")
-                        .replace(/\n/g, ' ')
-                        .replace(/\r/g, '')
-                        .substring(0, 100);
-                    // 确保 recordId 是有效的 id 值（会自动转换为字符串）
-                    const recordIdValue = id && id !== '' ? String(id) : String(rowIndex);
-                    rowHtml += `<button class="btn btn-sm return-shipment-btn" onclick="openReturnShipmentModal('${poLineStr}', '${descriptionStr}', ${shipmentQty}, '${currentTable}', '${recordIdValue}')" title="退货" style="padding: 4px 6px; font-size: 12px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">↩</button>`;
-                }
-
-                rowHtml += `</td>`;
-                // 再添加数据列
+                // 2. 再添加数据列
                 columnNames.forEach(col => {
                     const value = row[col] !== null ? row[col] : '';
                     // 格式化日期值
@@ -1833,6 +1858,32 @@
                     rowHtml += `<td class="${cellClass}" data-column="${col}" data-row-id="${isClosedTable ? row.id : rowIndex}" data-row="${rowIndex}" ondblclick="editCell(this)"><span>${escapedValue}</span></td>`;
                 });
 
+                // 3. 最后添加操作列 (Far right)
+                rowHtml += `<td style="text-align: center;" class="action-cell">`;
+
+                // 退货按钮 (仅在closed表显示)
+                if (isClosedTable) {
+                    const shipmentQty = parseFloat(row.qty) || 0;
+                    const poLineStr = String(poLine).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+                    // 更完善的转义：处理换行符、引号等特殊字符
+                    const descriptionStr = String(row.description || '')
+                        .replace(/\\/g, '\\\\\\\\')
+                        .replace(/"/g, '\\"')
+                        .replace(/'/g, "\\'")
+                        .replace(/\n/g, ' ')
+                        .replace(/\r/g, '')
+                        .substring(0, 100);
+                    // 确保 recordId 是有效的 id 值（会自动转换为字符串）
+                    const recordIdValue = id && id !== '' ? String(id) : String(rowIndex);
+                    rowHtml += `<button class="btn btn-sm return-shipment-btn" onclick="openReturnShipmentModal('${poLineStr}', '${descriptionStr}', ${shipmentQty}, '${currentTable}', '${recordIdValue}')" title="退货" style="padding: 4px 6px; font-size: 12px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">↩</button>`;
+                }
+
+                // 删除按钮 - 根据表类型传递不同的主键 (Now rightmost)
+                const deleteKey = isOpenTable ? poLine : id;
+                rowHtml += `<button class="delete-btn" onclick="deleteRowRecord('${deleteKey}', '${currentTable}')" title="删除此记录">✕</button>`;
+
+                rowHtml += `</td>`;
+
                 rowHtml += '</tr>';
                 tableHtml += rowHtml;
             });
@@ -1866,10 +1917,12 @@
 
             const tr = document.createElement('tr');
 
-            // Actions Column
-            const actionTh = document.createElement('th');
-            actionTh.textContent = 'Actions';
-            tr.appendChild(actionTh);
+            // Select Column (Far left)
+            const selectTh = document.createElement('th');
+            selectTh.textContent = 'Sel';
+            selectTh.className = 'select-header';
+            selectTh.title = 'Selection';
+            tr.appendChild(selectTh);
 
             // Data Columns
             columnNames.forEach(col => {
@@ -1891,6 +1944,12 @@
 
                 tr.appendChild(th);
             });
+
+            // Actions Column (Far right)
+            const actionTh = document.createElement('th');
+            actionTh.textContent = 'Actions';
+            actionTh.className = 'action-header';
+            tr.appendChild(actionTh);
 
             header.appendChild(tr);
         }
@@ -3185,10 +3244,22 @@
             const displayArea = document.getElementById('selectedItemsDisplay');
             displayArea.innerHTML = '';
 
+            let totalSelectedPrice = 0;
+            // 获取公司的货币符号 (假设选中的是同一家公司，或者只显示数字)
+            let currency = '';
+
             if (selectedItemsForShipment.size === 0) {
                 displayArea.innerHTML = '<span style="color: #a0aec0; font-size: 0.9rem;">No materials selected</span>';
             } else {
                 selectedItemsForShipment.forEach((item, poLine) => {
+                    const row = item.original_row;
+                    if (row && row.total_price) {
+                        totalSelectedPrice += parseFloat(row.total_price) || 0;
+                        if (!currency) {
+                            currency = getCurrencySymbol(row.company || '');
+                        }
+                    }
+
                     const tabHtml = `<div class="selected-tab">
                         <span>${poLine}</span>
                         <button type="button" class="remove-btn" onclick="removeFromShipmentSelection('${poLine}')">×</button>
@@ -3196,7 +3267,142 @@
                     displayArea.innerHTML += tabHtml;
                 });
             }
+
+            // 更新页头的Subtotal显示
+            const subtotalEl = document.getElementById('selectedSubtotal');
+            if (subtotalEl) {
+                subtotalEl.textContent = currency + totalSelectedPrice.toFixed(2);
+            }
+
+            // 更新表格底部的Subtotal显示
+            updateTableFooter(totalSelectedPrice, currency);
         }
+
+        // 更新表格底部 Subtotal
+        function updateTableFooter(totalPrice, currency) {
+            const footer = document.getElementById('tableFooter');
+            if (!footer) return;
+
+            if (selectedItemsForShipment.size === 0) {
+                footer.style.display = 'none';
+                return;
+            }
+
+            footer.style.display = 'table-footer-group';
+            footer.innerHTML = '';
+
+            const tr = document.createElement('tr');
+            tr.style.fontWeight = 'bold';
+            tr.style.backgroundColor = '#f8f9fa';
+
+            // 计算 total_price 列的索引
+            const totalPriceIndex = columnNames.indexOf('total_price');
+
+            // 1. Sel 列 (Index 0)
+            const selTd = document.createElement('td');
+            selTd.textContent = 'Subtotal';
+            selTd.className = 'select-cell';
+            selTd.style.fontSize = '0.8rem';
+            tr.appendChild(selTd);
+
+            // 2. 数据列
+            columnNames.forEach((col, index) => {
+                const td = document.createElement('td');
+                if (col === 'total_price') {
+                    td.textContent = (currency || '') + totalPrice.toFixed(2);
+                    td.style.textAlign = 'right';
+                    td.style.backgroundColor = '#fff3cd'; // Highlight subtotal
+                } else if (index === 0) {
+                    td.textContent = selectedItemsForShipment.size + ' items';
+                    td.style.fontSize = '0.85rem';
+                } else {
+                    td.textContent = '';
+                }
+                tr.appendChild(td);
+            });
+
+            // 3. Actions 列
+            const actionTd = document.createElement('td');
+            actionTd.className = 'action-cell';
+            actionTd.textContent = '';
+            tr.appendChild(actionTd);
+
+            footer.appendChild(tr);
+
+            // 触发宽度调整
+            adjustColumnWidths();
+        }
+
+        // 全选/取消全应当页 (Toggle)
+        function toggleSelectPage() {
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, filteredData.length);
+            const paginatedData = filteredData.slice(startIndex, endIndex);
+
+            // 检查当前页是否所有项都已被选中
+            const allSelected = paginatedData.every(row => selectedItemsForShipment.has(row.po_line));
+            const shouldSelect = !allSelected;
+
+            paginatedData.forEach((row, index) => {
+                const poLine = row.po_line;
+                if (shouldSelect) {
+                    if (!selectedItemsForShipment.has(poLine)) {
+                        selectedItemsForShipment.set(poLine, {
+                            po: row.po,
+                            pn: row.pn,
+                            po_line: poLine,
+                            id: row.id || '',
+                            qty: parseFloat(row.qty) || 0,
+                            description: row.description || '',
+                            row_index: startIndex + index,
+                            original_row: row
+                        });
+                    }
+                } else {
+                    selectedItemsForShipment.delete(poLine);
+                }
+            });
+
+            renderTableBody();
+            updateSelectedItemsDisplay();
+        }
+
+        // 全选所有筛选出的数据 (Toggle)
+        function toggleSelectAllFiltered() {
+            // 检查是否所有筛选出的项都已被选中
+            const allSelected = filteredData.every(row => selectedItemsForShipment.has(row.po_line));
+            const shouldSelect = !allSelected;
+
+            if (shouldSelect) {
+                filteredData.forEach((row, index) => {
+                    const poLine = row.po_line;
+                    if (!selectedItemsForShipment.has(poLine)) {
+                        selectedItemsForShipment.set(poLine, {
+                            po: row.po,
+                            pn: row.pn,
+                            po_line: poLine,
+                            id: row.id || '',
+                            qty: parseFloat(row.qty) || 0,
+                            description: row.description || '',
+                            row_index: index,
+                            original_row: row
+                        });
+                    }
+                });
+            } else {
+                // 如果已全部选中，则对所有筛选出的项进行反选
+                filteredData.forEach(row => {
+                    selectedItemsForShipment.delete(row.po_line);
+                });
+            }
+
+            renderTableBody();
+            updateSelectedItemsDisplay();
+        }
+
+        // Expose to window
+        window.toggleSelectPage = toggleSelectPage;
+        window.toggleSelectAllFiltered = toggleSelectAllFiltered;
 
         // 处理发货备选框变化
         function handleShipmentCheckboxChange() {

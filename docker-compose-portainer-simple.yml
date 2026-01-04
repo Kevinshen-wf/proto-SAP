@@ -16,7 +16,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d purchase_orders || exit 1"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d purchase_orders || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 30
@@ -25,13 +25,13 @@ services:
       - proto-sap-network
     restart: unless-stopped
     labels:
-      com.example.description: "PostgreSQL数据库"
+      com.example.description: "PostgreSQL database"
 
   # Flask 后端服务
   backend:
     image: proto-sap:latest
     container_name: proto-sap-backend
-    command: sh -c "until nc -z postgres 5432 2>/dev/null || pg_isready -h postgres -p 5432 2>/dev/null; do echo '等待数据库...'; sleep 2; done; echo '数据库就绪'; python init_db.py && python -m flask --app backend.web_app run --host=0.0.0.0 --port=5000"
+    command: sh -c "until nc -z postgres 5432 2>/dev/null || pg_isready -h postgres -p 5432 2>/dev/null; do echo 'wait for postgres...'; sleep 2; done; echo 'postgres ready'; python init_db.py && python -m flask --app backend.web_app run --host=0.0.0.0 --port=5000"
     environment:
       DB_HOST: postgres
       DB_NAME: ${DB_NAME:-purchase_orders}
@@ -46,7 +46,7 @@ services:
       SMTP_PORT: ${SMTP_PORT:-587}
       SENDER_EMAIL: ${SENDER_EMAIL:-shenkaiwen61@qq.com}
       SENDER_PASSWORD: ${SENDER_PASSWORD:-hjgbqrldkztebfbg}
-      APP_BASE_URL: ${APP_BASE_URL:-http://192.168.81.74:5000}
+      APP_BASE_URL: ${APP_BASE_URL:-https://poms.wf02.wefabricate.cn}
       EMAIL_ENABLED: ${EMAIL_ENABLED:-true}
     ports:
       - "5000:5000"
@@ -57,15 +57,22 @@ services:
       - postgres
     networks:
       - proto-sap-network
+      - webproxy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5000/')"]
+      test: [ "CMD", "python", "-c", "import requests; requests.get('http://localhost:5000/')" ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
     labels:
-      com.example.description: "Flask后端应用"
+      - "traefik.enable=true"
+      - "traefik.docker.network=webproxy"
+      - "traefik.http.routers.proto-sap.entrypoints=websecure"
+      - "traefik.http.routers.proto-sap.rule=Host(`poms.wf02.wefabricate.cn`)"
+      - "traefik.http.routers.proto-sap.tls.certresolver=myresolver"
+      - "traefik.http.services.proto-sap.loadbalancer.server.port=5000"
+      - "com.example.description=Flask backend app"
 
 volumes:
   postgres_data:
@@ -78,3 +85,5 @@ volumes:
 networks:
   proto-sap-network:
     driver: bridge
+  webproxy:
+    external: true
