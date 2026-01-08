@@ -182,7 +182,7 @@ class UserManager:
             if cursor.rowcount == 0:
                 cursor.close()
                 conn.close()
-                return False, "用户不存在或已验证"
+                return False, "用户不存在"
 
             conn.commit()
             cursor.close()
@@ -195,8 +195,90 @@ class UserManager:
                 conn.close()
             return False, f"设置密码时出错: {error}"
 
+    def change_user_password(self, user_id, old_password, new_password, skip_old_password_check=False):
+        """修改用户密码（需要提供旧密码，除非skip_old_password_check为True）"""
+        DEFAULT_PASSWORD = "Wefabricate123"
+        DEFAULT_PASSWORD_HASH = hashlib.sha256(DEFAULT_PASSWORD.encode()).hexdigest()
+        
+        conn = self.get_connection()
+        if not conn:
+            return False, "数据库连接失败"
+
+        try:
+            cursor = conn.cursor()
+            
+            # 获取用户当前密码哈希
+            select_query = """
+            SELECT password_hash, is_verified FROM purchase_orders.users 
+            WHERE id = %s
+            """
+            cursor.execute(select_query, (user_id,))
+            user = cursor.fetchone()
+            
+            if not user:
+                cursor.close()
+                conn.close()
+                return False, "用户不存在"
+            
+            current_password_hash, is_verified = user
+            
+            # 如果跳过旧密码检查（用于非verified用户首次设置密码）
+            if not skip_old_password_check:
+                # 验证旧密码
+                old_password_hash = hashlib.sha256(old_password.encode()).hexdigest()
+                
+                # 对于非verified用户，允许使用默认密码作为旧密码
+                if not is_verified:
+                    if old_password_hash != DEFAULT_PASSWORD_HASH and old_password_hash != current_password_hash:
+                        cursor.close()
+                        conn.close()
+                        return False, "旧密码错误，未验证用户请使用默认密码"
+                else:
+                    # 已验证用户必须提供正确的旧密码
+                    if old_password_hash != current_password_hash:
+                        cursor.close()
+                        conn.close()
+                        return False, "旧密码错误"
+            
+            # 生成新密码哈希
+            new_password_hash = hashlib.sha256(new_password.encode()).hexdigest()
+            
+            # 更新用户密码，如果是非verified用户，同时设置为verified
+            if not is_verified:
+                update_query = """
+                UPDATE purchase_orders.users 
+                SET password_hash = %s, is_verified = TRUE, verification_token = NULL, token_expires = NULL
+                WHERE id = %s
+                """
+            else:
+                update_query = """
+                UPDATE purchase_orders.users 
+                SET password_hash = %s
+                WHERE id = %s
+                """
+            cursor.execute(update_query, (new_password_hash, user_id))
+            
+            if cursor.rowcount == 0:
+                cursor.close()
+                conn.close()
+                return False, "更新密码失败"
+
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            return True, "密码修改成功"
+        except Exception as error:
+            if conn:
+                conn.rollback()
+                conn.close()
+            return False, f"修改密码时出错: {error}"
+
     def authenticate_user(self, email, password):
         """用户认证"""
+        DEFAULT_PASSWORD = "Wefabricate123"
+        DEFAULT_PASSWORD_HASH = hashlib.sha256(DEFAULT_PASSWORD.encode()).hexdigest()
+        
         conn = self.get_connection()
         if not conn:
             return False, "数据库连接失败"
@@ -222,13 +304,19 @@ class UserManager:
 
             user_id, password_hash, is_verified = user
             
-            # 检查用户是否已验证
+            # 对于未验证用户，允许使用默认密码登录
             if not is_verified:
+                # 验证是否为默认密码
+                if hashlib.sha256(password.encode()).hexdigest() != DEFAULT_PASSWORD_HASH:
+                    cursor.close()
+                    conn.close()
+                    return False, "密码错误，未验证用户请使用默认密码"
+                # 默认密码验证成功，返回用户信息（包含is_verified状态）
                 cursor.close()
                 conn.close()
-                return False, "用户未验证，请先完成邮箱验证"
+                return True, {"user_id": user_id, "email": email, "is_verified": False, "needs_password_change": True}
 
-            # 验证密码
+            # 对于已验证用户，验证密码
             if hashlib.sha256(password.encode()).hexdigest() != password_hash:
                 cursor.close()
                 conn.close()
@@ -237,7 +325,7 @@ class UserManager:
             cursor.close()
             conn.close()
             
-            return True, {"user_id": user_id, "email": email}
+            return True, {"user_id": user_id, "email": email, "is_verified": True, "needs_password_change": False}
         except Exception as error:
             if conn:
                 conn.close()

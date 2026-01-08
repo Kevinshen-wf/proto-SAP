@@ -450,8 +450,8 @@
             <h1>PDF Purchase Order Import System</h1>
             <div class="user-info">
                 <span id="currentUser">Not logged in</span>
-                <a href="/register.html" id="registerLink">Register</a>
                 <a href="/login.html" id="loginLink" style="display: inline-block;">Login</a>
+                <a href="/change_password.html" id="changePasswordLink" style="display: none;">Change Password</a>
                 <button id="logoutBtn" style="display: none;">Logout</button>
             </div>
         </div>
@@ -600,7 +600,10 @@
                 document.getElementById('currentUser').textContent = currentUser.email;
                 document.getElementById('logoutBtn').style.display = 'inline-block';
                 document.getElementById('loginLink').style.display = 'none';
-                document.getElementById('registerLink').style.display = 'none';
+                const changePasswordLink = document.getElementById('changePasswordLink');
+                if (changePasswordLink) {
+                    changePasswordLink.style.display = 'inline-block';
+                }
             }
 
             // Load company list

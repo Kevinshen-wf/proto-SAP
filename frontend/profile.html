@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>用户资料 - Wefabricate系统</title>
+    <title>User Profile - Wefabricate System</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -74,13 +74,14 @@
 </head>
 <body>
     <div class="container">
-        <h2>用户资料</h2>
+        <h2>User Profile</h2>
         <div id="message" class="message hidden"></div>
         <div class="user-info">
-            <p><strong>用户ID:</strong> <span id="userId">-</span></p>
-            <p><strong>邮箱:</strong> <span id="email">-</span></p>
+            <p><strong>User ID:</strong> <span id="userId">-</span></p>
+            <p><strong>Email:</strong> <span id="email">-</span></p>
         </div>
-        <button id="logoutBtn">退出登录</button>
+        <button id="changePasswordBtn" style="background-color: #28a745; margin-bottom: 10px;">Change Password</button>
+        <button id="logoutBtn">Logout</button>
     </div>
 
     <script>
@@ -117,8 +118,14 @@
                 }
             })
             .catch(error => {
-                showMessage('获取用户资料时发生错误: ' + error.message, 'error');
+                showMessage('Error fetching user profile: ' + error.message, 'error');
             });
+        });
+        
+        // 修改密码按钮
+        document.getElementById('changePasswordBtn').addEventListener('click', function() {
+            // 跳转到修改密码页面
+            window.location.href = '/change_password.html';
         });
         
         // 退出登录按钮

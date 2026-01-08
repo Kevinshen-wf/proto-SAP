@@ -104,9 +104,6 @@
             </div>
             <button type="submit">Login</button>
         </form>
-        <div class="register-link">
-            <a href="register.html">No account? Register now</a>
-        </div>
     </div>
 
     <script>
@@ -138,10 +135,19 @@
                     // 保存token到localStorage
                     localStorage.setItem('authToken', data.token);
                     localStorage.setItem('currentUser', JSON.stringify(data.user));
-                    // 3秒后跳转到主页
-                    setTimeout(() => {
-                        window.location.href = '/';
-                    }, 3000);
+                    
+                    // 检查是否需要修改密码
+                    if (data.needs_password_change) {
+                        // 强制跳转到修改密码页面
+                        setTimeout(() => {
+                            window.location.href = '/change_password.html?forced=true';
+                        }, 1500);
+                    } else {
+                        // 正常跳转到主页
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 1500);
+                    }
                 } else {
                     showMessage(data.error, 'error');
                 }

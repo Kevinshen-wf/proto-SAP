@@ -142,5 +142,11 @@ class UserController:
         
         return True, {
             'user': result,
-            'token': token
+            'token': token,
+            'needs_password_change': result.get('needs_password_change', False)
         }
+
+    def change_password(self, user_id, old_password, new_password):
+        """修改用户密码"""
+        success, message = self.user_manager.change_user_password(user_id, old_password, new_password)
+        return success, message

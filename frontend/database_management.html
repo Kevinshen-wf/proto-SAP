@@ -899,8 +899,8 @@
             <h1>Purchase Order Management System</h1>
             <div class="user-info">
                 <span id="currentUser">Not Logged In</span>
-                <a href="/register.html" id="registerLink">Register</a>
                 <a href="/login.html" id="loginLink" style="display: inline-block;">Login</a>
+                <a href="/change_password.html" id="changePasswordLink" style="display: none;">Change Password</a>
                 <button id="logoutBtn" style="display: none;">Logout</button>
             </div>
         </div>
@@ -1336,7 +1336,7 @@
                     const currentUserElement = document.getElementById('currentUser');
                     const logoutBtn = document.getElementById('logoutBtn');
                     const loginLink = document.getElementById('loginLink');
-                    const registerLink = document.getElementById('registerLink');
+                    const changePasswordLink = document.getElementById('changePasswordLink');
 
                     if (currentUserElement) {
                         currentUserElement.textContent = currentUser.email;
@@ -1350,8 +1350,8 @@
                         loginLink.style.display = 'none';
                     }
 
-                    if (registerLink) {
-                        registerLink.style.display = 'none';
+                    if (changePasswordLink) {
+                        changePasswordLink.style.display = 'inline-block';
                     }
                 }
 
@@ -1461,7 +1461,7 @@
             if (!token) {
                 // 如果没有token，跳转到登录页面
                 window.location.href = '/login.html';
-                throw new Error('未登录');
+                throw new Error('Not logged in');
             }
 
             // 添加认证头
@@ -1486,12 +1486,12 @@
                         localStorage.removeItem('authToken');
                         localStorage.removeItem('currentUser');
                         window.location.href = '/login.html';
-                        throw new Error('认证失败，请重新登录');
+                        throw new Error('Authentication failed, please login again');
                     }
                     return response;
                 })
                 .catch(error => {
-                    if (error.message === '认证失败，请重新登录') {
+                    if (error.message === 'Authentication failed, please login again') {
                         throw error;
                     }
                     // 其他错误继续抛出
@@ -1875,12 +1875,12 @@
                         .substring(0, 100);
                     // 确保 recordId 是有效的 id 值（会自动转换为字符串）
                     const recordIdValue = id && id !== '' ? String(id) : String(rowIndex);
-                    rowHtml += `<button class="btn btn-sm return-shipment-btn" onclick="openReturnShipmentModal('${poLineStr}', '${descriptionStr}', ${shipmentQty}, '${currentTable}', '${recordIdValue}')" title="退货" style="padding: 4px 6px; font-size: 12px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">↩</button>`;
+                    rowHtml += `<button class="btn btn-sm return-shipment-btn" onclick="openReturnShipmentModal('${poLineStr}', '${descriptionStr}', ${shipmentQty}, '${currentTable}', '${recordIdValue}')" title="Return" style="padding: 4px 6px; font-size: 12px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">↩</button>`;
                 }
 
                 // 删除按钮 - 根据表类型传递不同的主键 (Now rightmost)
                 const deleteKey = isOpenTable ? poLine : id;
-                rowHtml += `<button class="delete-btn" onclick="deleteRowRecord('${deleteKey}', '${currentTable}')" title="删除此记录">✕</button>`;
+                rowHtml += `<button class="delete-btn" onclick="deleteRowRecord('${deleteKey}', '${currentTable}')" title="Delete this record">✕</button>`;
 
                 rowHtml += `</td>`;
 
@@ -1901,7 +1901,7 @@
                     const actualRowIndex = startIndex + index;
                     const rowElement = document.querySelector(`tr[data-row-index="${actualRowIndex}"]`);
                     if (rowElement) {
-                        rowElement.title = `数据不一致: qty(${checkQty}) * net_price(${netPrice}) = ${calculatedTotal.toFixed(2)} ≠ total_price(${totalPrice})`;
+                        rowElement.title = `Data inconsistency: qty(${checkQty}) * net_price(${netPrice}) = ${calculatedTotal.toFixed(2)} ≠ total_price(${totalPrice})`;
                     }
                 }
             });
@@ -2110,8 +2110,8 @@
                             <input type="date" id="dateFilterInput_${column}" class="form-control" value="${currentDate || ''}">
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                            <button type="button" class="btn btn-primary" onclick="confirmDateFilter('${column}')">确定</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-primary" onclick="confirmDateFilter('${column}')">Confirm</button>
                         </div>
                     </div>
                 </div>
@@ -3018,7 +3018,7 @@
             if (rowElement) {
                 if (isInvalidRow) {
                     rowElement.classList.add('invalid-row');
-                    rowElement.title = `数据不一致: qty(${qty}) * net_price(${netPrice}) = ${calculatedTotal.toFixed(2)} ≠ total_price(${totalPrice})`;
+                    rowElement.title = `Data inconsistency: qty(${qty}) * net_price(${netPrice}) = ${calculatedTotal.toFixed(2)} ≠ total_price(${totalPrice})`;
                 } else {
                     rowElement.classList.remove('invalid-row');
                     rowElement.title = '';
@@ -3170,7 +3170,7 @@
                 console.log("插入表单已显示");
             } catch (error) {
                 console.error("showInsertForm函数执行出错:", error);
-                alert("显示插入表单时出错: " + error.message);
+                alert("Error showing insert form: " + error.message);
             }
         }
 
@@ -4236,7 +4236,7 @@
                                 document.body.removeChild(a);
 
                                 // 显示成功消息
-                                showReportSyncMessage(`成功更新 ${updatedHeader} 行数据，文件已自动下载`, 'success');
+                                showReportSyncMessage(`Successfully updated ${updatedHeader} rows, file downloaded automatically`, 'success');
 
                                 // 解析错误信息
                                 let errors = null;
@@ -4303,11 +4303,11 @@
             const resultsList = document.getElementById('reportSyncResultsList');
 
             let html = `<div class="alert alert-success">`;
-            html += `<strong>成功更新：</strong> ${successCount}/${totalCount} 行`;
+            html += `<strong>Successfully updated:</strong> ${successCount}/${totalCount} rows`;
             html += `</div>`;
 
             if (errors && errors.length > 0) {
-                html += `<div class="alert alert-warning"><strong>警告：</strong><ul>`;
+                html += `<div class="alert alert-warning"><strong>Warning:</strong><ul>`;
                 errors.forEach(err => {
                     html += `<li>${err}</li>`;
                 });
@@ -4478,7 +4478,7 @@
                                 document.body.removeChild(a);
 
                                 // 显示成功消息
-                                showExcelSyncMessage(`成功更新 ${updatedHeader} 行数据，文件已自动下载`, 'success');
+                                showExcelSyncMessage(`Successfully updated ${updatedHeader} rows, file downloaded automatically`, 'success');
 
                                 // 解析错误信息
                                 let errors = null;
@@ -4545,11 +4545,11 @@
             const resultsList = document.getElementById('excelSyncResultsList');
 
             let html = `<div class="alert alert-success">`;
-            html += `<strong>成功更新：</strong> ${successCount}/${totalCount} 行`;
+            html += `<strong>Successfully updated:</strong> ${successCount}/${totalCount} rows`;
             html += `</div>`;
 
             if (errors && errors.length > 0) {
-                html += `<div class="alert alert-warning"><strong>警告：</strong><ul>`;
+                html += `<div class="alert alert-warning"><strong>Warning:</strong><ul>`;
                 errors.forEach(err => {
                     html += `<li>${err}</li>`;
                 });

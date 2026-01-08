@@ -65,13 +65,12 @@ def check_authentication():
     
     # 公开路由不需要认证
     public_routes = [
-        '/api/user/register',
         '/api/user/login',
         '/api/user/verify-email',
         '/api/user/set-password',
-        '/register.html',
         '/login.html',
-        '/set_password.html'
+        '/set_password.html',
+        '/change_password.html'
     ]
     
     # 静态文件不需要认证
@@ -142,8 +141,8 @@ def pdf_import():
 
 @app.route('/register.html')
 def register():
-    """注册页面"""
-    return render_template('register.html')
+    """注册页面 - 已禁用"""
+    return render_template('login.html')  # 重定向到登录页面
 
 @app.route('/login.html')
 def login():
@@ -154,6 +153,11 @@ def login():
 def set_password():
     """设置密码页面"""
     return render_template('set_password.html')
+
+@app.route('/change_password.html')
+def change_password():
+    """修改密码页面"""
+    return render_template('change_password.html')
 
 # 所有 /api/tables 相关的路由由蓝图处理，不在此处定义
 # 避免路由冲突
